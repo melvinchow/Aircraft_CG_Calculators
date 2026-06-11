@@ -31,5 +31,10 @@ a) Linear Estimate
 b) AOA
 - The Center of Pressure (and hence optimal CG) moves rearward with more AOA due to the introduction of vortex lift.  Given that every delta wing is designed different, wind tunnel testing would give a more accurate change in performance than a calculator, so results should be taken with a grain of salt.
 
+# How to use:
+Download the HTML
+Open in any web browser
+Input measurements and see the results
+
 c) Wing Loading
 - Delta Wings are unique from conventional wings, in that ideal CG changes with wing loading.  As wing loading gets heavier, optimal CGs move aft as well.  This section attempts to estimate this change given parts A and B.  But this is also a VERY rough estimate and results should be taken with a grain of salt.
