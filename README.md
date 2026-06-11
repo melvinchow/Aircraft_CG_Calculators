@@ -9,7 +9,7 @@ There are three versions so far, based on the kind of aircraft design in questio
 
 The calculators assume that most CG recommendations are based on % MAC (Mean Aerodynamic Chord) measurements.  Most maiden flights are recommended to be performed with a CG at 25% MAC.  WWII Warbirds might prefer to be nose-heavier at 22% to 24% MAC.  The pilot can gradually move the CG tail heavier (up to 33% MAC) if more slow-speed acrobatic flying is desired.  A CG between 33% to 40% MAC is possible for the most extreme acrobatic performance, but a sophisticated, well-programmed gyro is highly recommended, or else the plane might not stay afloat.
 
-## 1) MAC CG Conventional
+## 1) MAC CG Sweep Wing
 
 For the conventional main wing + tailplanes layout (ex: Cessna 172, Piper Cherokee, F86 Sabre).  Accounts for wing sweep, if any.
 
