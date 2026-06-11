@@ -17,7 +17,7 @@ Tailplane measurements are not used here (but I may implement this in an update)
 
 ## 2) MAC CG Cranked Wing
 
-Same as the first version, except this includes more complex math to account for wings with abnormal shapes, whether it be an elliptical wing (ex: Supermarine Spitfire) or a wing with changing shapes along its span (ex: F15 Eagle, B2 Spirit), the wing would be divided into sections, measured per section, then combined together to compute an average.  In the rare occasion the plane has multiple sweep angles (ex: F16XL), the average angle is chosen.
+Similar to the first version, except this includes more complex math to account for wings with abnormal shapes, whether it be an elliptical wing (ex: Supermarine Spitfire) or a wing with changing angular shapes along its span (ex: F15 Eagle, B2 Spirit), the wing would be divided into sections, measured per section, then combined together to compute an average.  In the rare occasion the plane has multiple sweep angles (ex: F16XL, Saab 35 Draken), the average angle is chosen.
 
 If the wing design looks close enough to a conventional wing, one can always lay a ruler along the trailing edge, pretend the wing is not cranked, and compute an estimate using the conventional calculator.  You'll get close enough to the real optimal CG this way, and your preferred CG will be discovered through test flights anyways.
 
