@@ -1,0 +1,926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Delta Canard CG Calculator</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f4f4f0;
+    margin: 0;
+    padding: 20px;
+    color: #222;
+  }
+  h1 { font-size: 1.4em; margin: 0 0 4px; }
+  h2 { font-size: 1.15em; margin: 0 0 6px; color: #1f3a5f; }
+  .subtitle { color: #666; margin-bottom: 18px; font-size: 0.95em; }
+
+  .wrap { max-width: 1280px; margin: 0 auto; }
+
+  .tier {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 18px 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    margin-bottom: 22px;
+  }
+  .tier-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 4px;
+  }
+  .tier-badge {
+    font-size: 0.72em;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .tier-badge.reliable { background: #e8f5e9; color: #2e7d32; }
+  .tier-badge.approx   { background: #fff8e0; color: #b8860b; }
+  .tier-badge.illustrative { background: #fdecea; color: #c0392b; }
+  .tier-desc { font-size: 0.88em; color: #666; margin: 0 0 14px; line-height: 1.5; }
+
+  .io-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 860px) { .io-grid { grid-template-columns: 1fr; } }
+
+  .col-title {
+    font-size: 0.92em;
+    font-weight: 600;
+    color: #1f3a5f;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 4px;
+    margin: 0 0 10px;
+  }
+
+  .input-group { margin-bottom: 10px; }
+  .input-group label {
+    display: block;
+    font-size: 0.85em;
+    color: #444;
+    margin-bottom: 3px;
+    font-weight: 600;
+  }
+  .input-group .desc {
+    font-size: 0.76em;
+    color: #888;
+    margin-bottom: 3px;
+    font-weight: normal;
+  }
+  .input-group input, .input-group select {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.95em;
+    font-family: "Menlo", monospace;
+  }
+  .input-group input:focus, .input-group select:focus {
+    outline: none;
+    border-color: #2a7ab0;
+    box-shadow: 0 0 0 2px rgba(42,122,176,0.2);
+  }
+  .subgroup-title {
+    font-size: 0.82em;
+    font-weight: 700;
+    color: #2a7ab0;
+    margin: 12px 0 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+  }
+
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 0.9em;
+    border-bottom: 1px solid #f2f2f2;
+  }
+  .result-row .label { color: #555; }
+  .result-row .value {
+    font-family: "Menlo", monospace;
+    font-weight: 600;
+    color: #1f3a5f;
+  }
+  .result-row.highlight .value { color: #c0392b; font-size: 1.05em; }
+
+  table.aoa-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85em;
+    margin-top: 8px;
+  }
+  table.aoa-table th, table.aoa-table td {
+    padding: 5px 7px;
+    text-align: right;
+    border-bottom: 1px solid #eee;
+  }
+  table.aoa-table th {
+    background: #f7f0e0;
+    font-weight: 600;
+    color: #6b4a0e;
+  }
+  table.aoa-table th:first-child, table.aoa-table td:first-child { text-align: left; }
+  table.aoa-table td { font-family: "Menlo", monospace; }
+  table.aoa-table tr.zone-good { background: #eaf4ea; }
+  table.aoa-table tr.zone-caution { background: #fff8e0; }
+  table.aoa-table tr.zone-danger { background: #fdecea; }
+
+  .zone-legend {
+    display: flex;
+    gap: 14px;
+    margin-top: 8px;
+    font-size: 0.78em;
+    color: #555;
+    flex-wrap: wrap;
+  }
+  .zone-legend .item { display: flex; align-items: center; gap: 5px; }
+  .zone-legend .box { width: 14px; height: 14px; border: 1px solid #ccc; border-radius: 2px; }
+
+  .chart-wrap { margin-top: 14px; }
+  svg.chart { width: 100%; height: auto; display: block; background: #fcfcfa; border: 1px solid #eee; border-radius: 4px; }
+
+  .note-box {
+    background: #fff8e0;
+    border-left: 3px solid #c97a1a;
+    padding: 8px 12px;
+    margin-top: 12px;
+    font-size: 0.84em;
+    color: #6b4a0e;
+    border-radius: 0 4px 4px 0;
+    line-height: 1.5;
+  }
+  .note-box.danger {
+    background: #fdecea;
+    border-left-color: #c0392b;
+    color: #922;
+  }
+
+  .formula-note {
+    font-size: 0.78em;
+    color: #999;
+    margin-top: 6px;
+    font-family: "Menlo", monospace;
+  }
+  .glossary { font-size: 0.9em; }
+  .glossary dl {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 8px 16px;
+    margin: 0;
+  }
+  .glossary dt { font-family: "Menlo", monospace; color: #1f3a5f; font-weight: 600; }
+  .glossary dd { margin: 0; color: #444; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Delta Canard CG Calculator</h1>
+<div class="subtitle">Three tiers of increasing approximation: a reliable linear neutral point, an approximate vortex-lift AoA migration, and an illustrative wing-loading trim coupling. Read each tier's caveats. Use consistent units (mm for lengths, mm² implied for areas; the %MAC outputs are unit-independent).</div>
+
+
+<!-- ============================================================
+     TIER 1 DIAGRAM
+============================================================ -->
+<div class="tier">
+  <div class="tier-header">
+    <h2>Tier 1 — what the inputs &amp; outputs mean on the airframe</h2>
+    <span class="tier-badge reliable">Diagram</span>
+  </div>
+  <p class="tier-desc">
+    Top-down view of the left half of a Rafale-style delta canard. Forward is up, aft is down; the fuselage centerline is on the right. Blue = measured inputs, orange = computed geometry, green = aerodynamic centers, red = neutral point and CG.
+  </p>
+
+  <svg viewBox="0 0 820 560" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto;display:block;">
+    <!-- ============================================================
+         COORDINATE SYSTEM:
+         - Fuselage centerline on the right at x = 740
+         - Forward (nose) = up (small y), aft (tail) = down (large y)
+         - Left wing/canard extend leftward
+         
+         Layout (a close-coupled canard delta, half view):
+           Nose tip:        (740, 30)
+           Fuselage tapers down the right side
+           
+         CANARD (foreplane) — small delta up front:
+           Canard root LE:  (740, 110)
+           Canard root TE:  (740, 170)   [root chord 60]
+           Canard tip LE:   (610, 150)   [span ~130, sweep]
+           Canard tip TE:   (610, 175)   [tip chord 25]
+         
+         MAIN WING — large delta further aft:
+           Wing root LE:    (740, 230)
+           Wing root TE:    (740, 470)   [root chord 240]
+           Wing tip LE:     (430, 410)   [span ~310, 45° sweep]
+           Wing tip TE:     (430, 450)   [tip chord ~40]
+         
+         Quarter-chord points (25% MAC) — schematic:
+           Wing: MAC located partway out; 25% MAC point near (660, 300) area
+           Canard: 25% MAC near (705, 128)
+         
+         For the diagram we'll mark:
+           - Canard 25% MAC AC (green) — schematic position
+           - Wing 25% MAC AC (green)
+           - L_c arrow between them along centerline
+           - Neutral point (red) between them, closer to wing (lift-weighted)
+           - CG (red) just forward of NP by static margin
+      ============================================================ -->
+
+    <defs>
+      <marker id="dArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#888"/>
+      </marker>
+      <marker id="dArrOrange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M 0 0 L 10 5 L 0 10 z" fill="#c97a1a"/>
+      </marker>
+      <marker id="dArrOrangeStart" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M 10 0 L 0 5 L 10 10 z" fill="#c97a1a"/>
+      </marker>
+    </defs>
+
+    <!-- Orientation arrows -->
+    <g font-family="sans-serif" font-size="11" fill="#888">
+      <line x1="40" y1="60" x2="40" y2="24" stroke="#888" stroke-width="1.5" marker-end="url(#dArr)"/>
+      <text x="47" y="34">Forward (nose)</text>
+      <line x1="40" y1="60" x2="40" y2="100" stroke="#888" stroke-width="1.5" marker-end="url(#dArr)"/>
+      <text x="47" y="95">Aft (tail)</text>
+      <line x1="40" y1="60" x2="95" y2="60" stroke="#888" stroke-width="1.5" marker-end="url(#dArr)"/>
+      <text x="52" y="54">Inboard →</text>
+    </g>
+
+    <!-- Fuselage centerline -->
+    <line x1="740" y1="20" x2="740" y2="545" stroke="#888" stroke-width="1" stroke-dasharray="4,3"/>
+    <text x="765" y="65" font-family="sans-serif" font-size="9" fill="#666" text-anchor="middle">centerline</text>
+
+    <!-- Fuselage half (right side body) -->
+    <path d="M 740 30
+             L 728 110 L 726 230 L 724 470 L 722 510
+             L 740 510 Z"
+          fill="#d8d8d8" stroke="#aaa" stroke-width="1"/>
+    <text x="765" y="50" font-family="sans-serif" font-size="10" fill="#888" transform="rotate(0 760 300)" text-anchor="middle">fuselage</text>
+
+    <!-- ============================================================
+         CANARD (foreplane)
+      ============================================================ -->
+    <polygon points="728,110 728,170 610,175 610,150"
+             fill="#e3eef0" stroke="#1f6b78" stroke-width="1.8"/>
+    <text x="635" y="163" font-family="sans-serif" font-size="11" fill="#1f6b78" font-weight="bold">canard</text>
+
+    <!-- Canard LE highlight -->
+    <line x1="728" y1="110" x2="610" y2="150" stroke="#1f6b78" stroke-width="2.5"/>
+
+    <!-- Canard chord inputs -->
+    <!-- Canard root chord Cr_c -->
+    <line x1="750" y1="109" x2="750" y2="169" stroke="#2a7ab0" stroke-width="2"/>
+    <line x1="745" y1="109" x2="755" y2="109" stroke="#2a7ab0" stroke-width="2"/>
+    <line x1="745" y1="169" x2="755" y2="169" stroke="#2a7ab0" stroke-width="2"/>
+    <text x="780" y="150" font-family="sans-serif" font-size="10" fill="#2a7ab0" font-weight="bold" text-anchor="end">Cr_c</text>
+    <!-- Canard tip chord Ct_c -->
+    <line x1="598" y1="150" x2="598" y2="175" stroke="#2a7ab0" stroke-width="2"/>
+    <line x1="593" y1="150" x2="603" y2="150" stroke="#2a7ab0" stroke-width="2"/>
+    <line x1="593" y1="175" x2="603" y2="175" stroke="#2a7ab0" stroke-width="2"/>
+    <text x="588" y="166" font-family="sans-serif" font-size="10" fill="#2a7ab0" font-weight="bold" text-anchor="end">Ct_c</text>
+    <!-- Canard span b_c/2 -->
+    <line x1="610" y1="185" x2="728" y2="185" stroke="#2a7ab0" stroke-width="1.5"/>
+    <line x1="610" y1="181" x2="610" y2="189" stroke="#2a7ab0" stroke-width="1.5"/>
+    <line x1="728" y1="181" x2="728" y2="189" stroke="#2a7ab0" stroke-width="1.5"/>
+    <text x="669" y="198" font-family="sans-serif" font-size="9" fill="#2a7ab0" font-weight="bold" text-anchor="middle">b_c / 2</text>
+
+    <!-- ============================================================
+         MAIN WING (delta)
+      ============================================================ -->
+    <polygon points="726,230 724,470 430,450 430,410"
+             fill="#e8f1f8" stroke="#1f3a5f" stroke-width="1.8"/>
+    <text x="560" y="430" font-family="sans-serif" font-size="12" fill="#1f3a5f" font-weight="bold">main wing</text>
+
+    <!-- Wing LE highlight -->
+    <line x1="726" y1="230" x2="430" y2="410" stroke="#1f3a5f" stroke-width="2.5"/>
+    <text x="490" y="328" font-family="sans-serif" font-size="10" fill="#1f3a5f" font-style="italic" transform="rotate(-31 540 305)">leading edge</text>
+
+    <!-- Wing root chord Cr_w -->
+    <line x1="755" y1="230" x2="755" y2="470" stroke="#2a7ab0" stroke-width="2"/>
+    <line x1="750" y1="230" x2="760" y2="230" stroke="#2a7ab0" stroke-width="2"/>
+    <line x1="750" y1="470" x2="760" y2="470" stroke="#2a7ab0" stroke-width="2"/>
+    <text x="788" y="414" font-family="sans-serif" font-size="11" fill="#2a7ab0" font-weight="bold" text-anchor="end">Cr_w</text>
+
+    <!-- Wing tip chord Ct_w -->
+    <line x1="418" y1="410" x2="418" y2="450" stroke="#2a7ab0" stroke-width="2"/>
+    <line x1="413" y1="410" x2="423" y2="410" stroke="#2a7ab0" stroke-width="2"/>
+    <line x1="413" y1="450" x2="423" y2="450" stroke="#2a7ab0" stroke-width="2"/>
+    <text x="406" y="434" font-family="sans-serif" font-size="10" fill="#2a7ab0" font-weight="bold" text-anchor="end">Ct_w</text>
+
+    <!-- Wing span b_w/2 -->
+    <line x1="428" y1="476" x2="722" y2="476" stroke="#2a7ab0" stroke-width="1.5"/>
+    <line x1="428" y1="472" x2="428" y2="480" stroke="#2a7ab0" stroke-width="1.5"/>
+    <line x1="722" y1="472" x2="722" y2="480" stroke="#2a7ab0" stroke-width="1.5"/>
+    <text x="577" y="504" font-family="sans-serif" font-size="10" fill="#2a7ab0" font-weight="bold" text-anchor="middle">b_w / 2 (semi-span)</text>
+
+    <!-- Wing sweep angle Λ_w -->
+    <!-- <line x1="726" y1="230" x2="726" y2="280" stroke="#c97a1a" stroke-width="1" stroke-dasharray="3,2"/> -->
+    <path d="M 726 350 A 40 40 0 0 0 700 375" stroke="#c97a1a" stroke-width="1.5" fill="none"/>
+    <text x="710" y="385" font-family="sans-serif" font-size="10" fill="#c97a1a" font-weight="bold" text-anchor="end">Λ_w</text>
+
+    <!-- ============================================================
+         AERODYNAMIC CENTERS (green) — at 25% MAC of each surface
+      ============================================================ -->
+    <!-- Canard AC (25% canard MAC) — schematic near (700,128) -->
+    <circle cx="680" cy="135" r="6" fill="#2a9d4a" stroke="#fff" stroke-width="1.5"/>
+    <text x="695" y="104" font-family="sans-serif" font-size="9" fill="#2a9d4a" font-weight="bold" text-anchor="end">X_ac,c</text>
+    <text x="695" y="116" font-family="sans-serif" font-size="8" fill="#2a9d4a" text-anchor="end">(canard AC, 25% MAC_c)</text>
+
+    <!-- Wing AC (25% wing MAC) — schematic near (660,300) -->
+    <circle cx="680" cy="330" r="7" fill="#2a9d4a" stroke="#fff" stroke-width="1.5"/>
+    <text x="680" y="350" font-family="sans-serif" font-size="10" fill="#2a9d4a" font-weight="bold" text-anchor="end">X_ac,w</text>
+    <text x="678" y="360" font-family="sans-serif" font-size="8" fill="#2a9d4a" text-anchor="end">(wing AC, 25% MAC_w)</text>
+
+    <!-- ============================================================
+         L_c — distance between the two ACs along centerline
+      ============================================================ -->
+    <!-- projected onto centerline for the dimension -->
+    <line x1="452" y1="135" x2="452" y2="330" stroke="#c97a1a" stroke-width="2"
+          marker-start="url(#dArrOrangeStart)" marker-end="url(#dArrOrange)"/>
+    <line x1="452" y1="135" x2="680" y2="135" stroke="#c97a1a" stroke-width="0.8" stroke-dasharray="2,2"/>
+    <line x1="452" y1="330" x2="680" y2="330" stroke="#c97a1a" stroke-width="0.8" stroke-dasharray="2,2"/>
+    <text x="420" y="270" font-family="sans-serif" font-size="11" fill="#c97a1a" font-weight="bold">L_c</text>
+    <text x="400" y="282" font-family="sans-serif" font-size="8" fill="#c97a1a">(canard AC</text>
+    <text x="380" y="292" font-family="sans-serif" font-size="8" fill="#c97a1a">ahead of wing AC)</text>
+
+    <!-- ============================================================
+         L_root — distance between Canard root Leading Edge and wing root Leading Edge
+      ============================================================ -->
+    <!--Main Lines & Label-->
+    <line x1="545" y1="107" x2="555" y2="107" stroke="#c97a1a" stroke-width="2"/>
+    <line x1="550" y1="107" x2="550" y2="230" stroke="#c97a1a" stroke-width="2"/>
+    <line x1="545" y1="230" x2="555" y2="230" stroke="#c97a1a" stroke-width="2"/>
+    <text x="543" y="207" font-family="sans-serif" font-size="10" fill="#c97a1a" font-weight="bold" text-anchor="end">L_root</text>
+    <!--Dashed Lines-->
+    <line x1="555" y1="107" x2="720" y2="107" stroke="#c97a1a" stroke-width="0.8" stroke-dasharray="2,2"/>
+    <line x1="555" y1="230" x2="720" y2="230" stroke="#c97a1a" stroke-width="0.8" stroke-dasharray="2,2"/>
+
+    <!-- ============================================================
+         NEUTRAL POINT (red) — lift-weighted between the two ACs,
+         sits closer to the wing AC (wing carries most lift)
+      ============================================================ -->
+    <circle cx="675" cy="290" r="7" fill="#c0392b" stroke="#fff" stroke-width="2"/>
+    <text x="683" y="303" font-family="sans-serif" font-size="9" fill="#c0392b" font-weight="bold">X_np</text>
+    <text x="568" y="244" font-family="sans-serif" font-size="7" fill="#c0392b" transform="rotate(-31 760 300)">(neutral point — lift-weighted blend)</text>
+
+
+    <!-- CG (red, just forward of NP by static margin) -->
+    <circle cx="678" cy="265" r="7" fill="#c0392b" stroke="#fff" stroke-width="2"/>
+    <circle cx="678" cy="265" r="2.5" fill="#fff"/>
+    <text x="655" y="250" font-family="sans-serif" font-size="11" fill="#c0392b" font-weight="bold">⚖ CG</text>
+
+    <!-- Static margin gap arrow between CG and NP -->
+    <line x1="800" y1="265" x2="800" y2="290" stroke="#c0392b" stroke-width="1.5"
+          marker-start="url(#dArrOrangeStart)" marker-end="url(#dArrOrange)"/>
+    <line x1="678" y1="265" x2="800" y2="265" stroke="#c0392b" stroke-width="0.6" stroke-dasharray="2,2"/>
+    <line x1="675" y1="290" x2="800" y2="290" stroke="#c0392b" stroke-width="0.6" stroke-dasharray="2,2"/>
+    <text x="788" y="238" font-family="sans-serif" font-size="8" fill="#c0392b">static</text>
+    <text x="788" y="248" font-family="sans-serif" font-size="8" fill="#c0392b">margin</text>
+
+    <!-- Note: CG sits forward of NP -->
+    <text x="475" y="265" font-family="sans-serif" font-size="9" fill="#c0392b" font-style="italic">CG sits forward of NP by the static margin →</text>
+
+  </svg>
+
+  <div style="display:flex; gap:14px; margin-top:10px; font-size:0.82em; color:#555; flex-wrap:wrap; border-top:1px solid #eee; padding-top:10px;">
+    <div style="display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:14px;height:3px;background:#2a7ab0;"></span>Blue — measured inputs (chords, spans, sweep)</div>
+    <div style="display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:14px;height:3px;background:#c97a1a;"></span>Orange — computed geometry (L_c, sweep, static margin)</div>
+    <div style="display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:14px;height:3px;background:#2a9d4a;"></span>Green — aerodynamic centers (25% MAC of each surface)</div>
+    <div style="display:flex;align-items:center;gap:5px;"><span style="display:inline-block;width:14px;height:3px;background:#c0392b;"></span>Red — neutral point &amp; CG</div>
+  </div>
+
+  <div class="note-box">
+    <b>Reading the diagram:</b> the wing carries far more lift than the canard (bigger area, and lift-curve slope × area dominates), so the lift-weighted neutral point <b>X_np</b> sits much closer to the wing AC than to the canard AC — not halfway between them. Your CG goes just <i>forward</i> of X_np, by the static margin you choose. A bigger canard or a longer <b>L_c</b> drags X_np forward, forcing the CG forward too.
+  </div>
+</div>
+
+<!-- ============================================================
+     TIER 1 — LINEAR NEUTRAL POINT
+============================================================ -->
+<div class="tier">
+  <div class="tier-header">
+    <h2>Tier 1 — Linear neutral point</h2>
+    <span class="tier-badge reliable">Reliable</span>
+  </div>
+  <p class="tier-desc">
+    Computes the low-AoA whole-aircraft neutral point as a lift-weighted average of the wing's and canard's aerodynamic centers. Trustworthy in attached flow (roughly 0–8° AoA). This is your foundation — the CG recommendation here is the one to maiden on.
+  </p>
+
+  <div class="io-grid">
+    <div>
+      <div class="col-title">Inputs — planform dimensions</div>
+
+      <div class="subgroup-title">Main wing</div>
+      <div class="input-group">
+        <label>Root chord (Cr_w)</label>
+        <input type="number" id="wCr" value="450" step="1">
+      </div>
+      <div class="input-group">
+        <label>Tip chord (Ct_w)</label>
+        <input type="number" id="wCt" value="90" step="1">
+      </div>
+      <div class="input-group">
+        <label>Full span (b_w, tip to tip)</label>
+        <input type="number" id="wSpan" value="700" step="1">
+      </div>
+      <div class="input-group">
+        <label>Leading-edge sweep (Λ_w, deg)</label>
+        <input type="number" id="wSweep" value="45" step="0.5">
+      </div>
+
+      <div class="subgroup-title">Canard (foreplane)</div>
+      <div class="input-group">
+        <label>Root chord (Cr_c)</label>
+        <input type="number" id="cCr" value="150" step="1">
+      </div>
+      <div class="input-group">
+        <label>Tip chord (Ct_c)</label>
+        <input type="number" id="cCt" value="60" step="1">
+      </div>
+      <div class="input-group">
+        <label>Full span (b_c, tip to tip)</label>
+        <input type="number" id="cSpan" value="300" step="1">
+      </div>
+      <div class="input-group">
+        <label>Leading-edge sweep (Λ_c, deg)</label>
+        <input type="number" id="cSweep" value="40" step="0.5">
+      </div>
+
+      <div class="subgroup-title">Layout & target</div>
+      <div class="input-group">
+        <label>Canard root LE ahead of wing root LE (L_root)</label>
+        <div class="desc">Positive number. Measured along the fuselage centerline at the aircraft center, from the wing's root leading edge forward to the canard's root leading edge. Easier and less ambiguous than measuring between 25%-MAC points — the calculator adds each surface's own sweep-induced MAC offset for you.</div>
+        <input type="number" id="lRoot" value="300" step="1">
+      </div>
+      <div class="input-group">
+        <label>Canard efficiency (η_c)</label>
+        <div class="desc">~1.0 for a clean canard ahead of the wing. Lower if partly shadowed.</div>
+        <input type="number" id="etaC" value="1.0" step="0.05">
+      </div>
+      <div class="input-group">
+        <label>Target static margin (% of wing MAC)</label>
+        <div class="desc">5–10% for hand-flown stable. 0–3% for gyro-assisted aerobatic. Negative = unstable (computer/gyro required).</div>
+        <input type="number" id="staticMargin" value="8" step="0.5">
+      </div>
+    </div>
+
+    <div>
+      <div class="col-title">Outputs</div>
+
+      <div class="result-row"><span class="label">Wing area (S_w)</span><span class="value" id="oWS">—</span></div>
+      <div class="result-row"><span class="label">Wing MAC</span><span class="value" id="oWMAC">—</span></div>
+      <div class="result-row"><span class="label">Wing aspect ratio (AR_w)</span><span class="value" id="oWAR">—</span></div>
+      <div class="result-row"><span class="label">Wing lift-curve slope (a_w, /rad)</span><span class="value" id="oWa">—</span></div>
+      <div class="result-row"><span class="label">Canard area (S_c)</span><span class="value" id="oCS">—</span></div>
+      <div class="result-row"><span class="label">Canard MAC</span><span class="value" id="oCMAC">—</span></div>
+      <div class="result-row"><span class="label">Canard aspect ratio (AR_c)</span><span class="value" id="oCAR">—</span></div>
+      <div class="result-row"><span class="label">Canard lift-curve slope (a_c, /rad)</span><span class="value" id="oCa">—</span></div>
+      <div class="result-row"><span class="label">Canard area fraction S_c/(S_c+S_w)</span><span class="value" id="oCfrac">—</span></div>
+
+      <div style="margin-top:12px;"></div>
+      <div class="result-row"><span class="label">Wing AC offset aft of wing root LE</span><span class="value" id="oWacOff">—</span></div>
+      <div class="result-row"><span class="label">Canard AC offset aft of canard root LE</span><span class="value" id="oCacOff">—</span></div>
+      <div class="result-row"><span class="label">Derived L_c (canard AC ahead of wing AC)</span><span class="value" id="oLc">—</span></div>
+
+      <div style="margin-top:12px;"></div>
+      <div class="result-row"><span class="label">Neutral point (aft of wing LE, length)</span><span class="value" id="oNPlen">—</span></div>
+      <div class="result-row highlight"><span class="label">Neutral point (% wing MAC)</span><span class="value" id="oNPpct">—</span></div>
+      <div class="result-row highlight"><span class="label">Recommended CG (% wing MAC)</span><span class="value" id="oCGpct">—</span></div>
+      <div class="result-row"><span class="label">Recommended CG (aft of wing LE, length)</span><span class="value" id="oCGlen">—</span></div>
+
+      <div class="formula-note">a = 2π·AR / (2 + √(AR²(1+tan²Λ½) + 4)) · X_np = Σ(X_ac·a·S·η)/Σ(a·S·η)</div>
+
+      <div class="note-box">
+        The neutral-point %MAC here is measured along the wing's MAC, aft of the wing's leading edge. Bigger or more-forward canard → NP moves forward → CG must move forward to keep the same margin.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     TIER 2 — AOA MIGRATION (POLHAMUS)
+============================================================ -->
+<div class="tier">
+  <div class="tier-header">
+    <h2>Tier 2 — Aerodynamic-center migration with AoA</h2>
+    <span class="tier-badge approx">Approximate</span>
+  </div>
+  <p class="tier-desc">
+    Uses the Polhamus leading-edge-suction analogy to estimate how the wing's aerodynamic center drifts aft as angle of attack increases and vortex lift develops. The shift is <b>not</b> a constant per degree — it accelerates because vortex lift scales with sin²(α). Trustworthy ~0–15°, shaky 15–25° as vortex breakdown nears, unreliable beyond. Output shown both as absolute %MAC and as shift from the 0° baseline.
+  </p>
+
+  <div class="io-grid">
+    <div>
+      <div class="col-title">Inputs</div>
+      <div class="input-group">
+        <label>Attached-flow AC location (% wing MAC)</label>
+        <div class="desc">Where lift acts in attached flow. ~25% for typical airfoils; ~30–35% for slender deltas.</div>
+        <input type="number" id="acAttached" value="25" step="0.5">
+      </div>
+      <div class="input-group">
+        <label>Vortex-lift AC location (% wing MAC)</label>
+        <div class="desc">Where the vortex lift acts — further aft, typically 45–55%.</div>
+        <input type="number" id="acVortex" value="50" step="0.5">
+      </div>
+      <div class="input-group">
+        <label>Estimated vortex-breakdown AoA (deg)</label>
+        <div class="desc">Where the leading-edge vortex bursts and lift collapses. Higher for sharper, more swept wings. ~25–35° typical; lower for low sweep.</div>
+        <input type="number" id="breakdownAoA" value="28" step="1">
+      </div>
+      <div class="note-box danger">
+        <b>Departure warning:</b> past the breakdown AoA the vortex bursts asymmetrically and the aircraft can depart (tumble). Light, low-inertia models tumble hardest. The calculator marks this boundary but cannot predict recovery behavior.
+      </div>
+    </div>
+
+    <div>
+      <div class="col-title">AC location vs AoA</div>
+      <table class="aoa-table" id="aoaTable">
+        <thead>
+          <tr><th>AoA (°)</th><th>AC (% MAC)</th><th>Shift from 0° (% MAC)</th><th>Vortex lift share</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <div class="zone-legend">
+        <div class="item"><div class="box" style="background:#eaf4ea"></div>Trustworthy (0–15°)</div>
+        <div class="item"><div class="box" style="background:#fff8e0"></div>Shaky (15° to breakdown)</div>
+        <div class="item"><div class="box" style="background:#fdecea"></div>Past breakdown</div>
+      </div>
+
+      <div class="chart-wrap">
+        <svg class="chart" id="aoaChart" viewBox="0 0 480 240"></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     TIER 3 — WING LOADING TRIM COUPLING
+============================================================ -->
+<div class="tier">
+  <div class="tier-header">
+    <h2>Tier 3 — Wing-loading trim coupling</h2>
+    <span class="tier-badge illustrative">Illustrative</span>
+  </div>
+  <p class="tier-desc">
+    Connects wing loading → required lift coefficient → trim AoA → AC shift (from Tier 2) → felt static margin. This stacks approximation on approximation, so treat it as a <b>relative comparison tool</b> — "how does my heavier build trim differently from the manufacturer's spec" — not an absolute CG predictor.
+  </p>
+
+  <div class="io-grid">
+    <div>
+      <div class="col-title">Inputs</div>
+      <div class="input-group">
+        <label>Air density (ρ, kg/m³)</label>
+        <div class="desc">~1.225 at sea level; ~1.10 at 1500 m / hot day.</div>
+        <input type="number" id="rho" value="1.225" step="0.005">
+      </div>
+      <div class="input-group">
+        <label>Flight speed (V, m/s)</label>
+        <div class="desc">Cruise or approach speed you care about. 20 m/s ≈ 72 km/h ≈ 45 mph.</div>
+        <input type="number" id="speed" value="22" step="1">
+      </div>
+
+      <div class="subgroup-title">Configuration A (e.g. manufacturer spec)</div>
+      <div class="input-group">
+        <label>Wing loading A (g/dm²)</label>
+        <div class="desc">All-up weight ÷ wing area. Common RC unit.</div>
+        <input type="number" id="wlA" value="65" step="1">
+      </div>
+
+      <div class="subgroup-title">Configuration B (e.g. your build)</div>
+      <div class="input-group">
+        <label>Wing loading B (g/dm²)</label>
+        <input type="number" id="wlB" value="85" step="1">
+      </div>
+
+      <div class="note-box">
+        <b>Canard-down / elevon-up trim trick (context, not modeled):</b> setting the canard slightly leading-edge-up and compensating with up-elevon biases lift toward the canard, energizing the wing's upper-surface vortex flow. This raises total C_L at a given AoA, lowering stall speed and tightening turns, at the cost of trim drag. It's a tuning knob on top of CG, not a substitute for it. Modeling it numerically needs control-derivative data this tool doesn't have.
+      </div>
+    </div>
+
+    <div>
+      <div class="col-title">Trim comparison</div>
+      <div class="result-row"><span class="label">Required C_L — config A</span><span class="value" id="oClA">—</span></div>
+      <div class="result-row"><span class="label">Trim AoA — config A</span><span class="value" id="oAoaA">—</span></div>
+      <div class="result-row"><span class="label">AC at trim — config A (% MAC)</span><span class="value" id="oAcA">—</span></div>
+      <div style="margin-top:10px;"></div>
+      <div class="result-row"><span class="label">Required C_L — config B</span><span class="value" id="oClB">—</span></div>
+      <div class="result-row"><span class="label">Trim AoA — config B</span><span class="value" id="oAoaB">—</span></div>
+      <div class="result-row"><span class="label">AC at trim — config B (% MAC)</span><span class="value" id="oAcB">—</span></div>
+      <div style="margin-top:10px;"></div>
+      <div class="result-row highlight"><span class="label">Felt static-margin change (B vs A, % MAC)</span><span class="value" id="oMarginDelta">—</span></div>
+
+      <div class="note-box" id="tier3Interpretation">—</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     GLOSSARY
+============================================================ -->
+<div class="tier glossary">
+  <h2>Variable glossary</h2>
+  <dl>
+    <dt>S_w, S_c</dt><dd>Planform area of wing and canard.</dd>
+    <dt>AR</dt><dd>Aspect ratio = span² / area. Higher = more slender; lower = stubbier.</dd>
+    <dt>a_w, a_c</dt><dd>Lift-curve slope (lift per radian of AoA) from the Helmbold/DATCOM equation. Per-radian here; divide by 57.3 for per-degree.</dd>
+    <dt>η_c</dt><dd>Canard efficiency — dynamic-pressure ratio at the canard. ~1.0 in clean air.</dd>
+    <dt>L_root</dt><dd>Measured input. Distance the canard's root leading edge sits ahead of the wing's root leading edge, along the fuselage centerline at the aircraft center. Positive number.</dd>
+    <dt>L_c</dt><dd>Derived output. Distance the canard's aerodynamic center sits ahead of the wing's AC, along the centerline. Computed from L_root plus each surface's own sweep-induced MAC offset (X_mac + 0.25·MAC).</dd>
+    <dt>X_np</dt><dd>Neutral point — the whole-aircraft aerodynamic center. CG must sit ahead of it for static stability.</dd>
+    <dt>Static margin</dt><dd>(X_np − X_cg) / MAC, as a percentage. Positive = stable. The gap you keep between CG and NP.</dd>
+    <dt>C_L,p / C_L,v</dt><dd>Potential (attached) and vortex contributions to lift coefficient in the Polhamus model.</dd>
+    <dt>Vortex breakdown</dt><dd>AoA at which the leading-edge vortex bursts; lift collapses and the aircraft can depart.</dd>
+    <dt>C_L</dt><dd>Lift coefficient — dimensionless lift. C_L = Lift / (½·ρ·V²·S).</dd>
+  </dl>
+  <div class="note-box">
+    <b>Coordinate convention:</b> all %MAC and length outputs are measured aft of the <i>wing's</i> leading edge (at the wing root), along the fuselage centerline, expressed as a fraction of the wing's MAC — consistent with the conventional and complex-wing calculators.
+  </div>
+</div>
+
+</div>
+
+<script>
+(function() {
+  const $ = id => document.getElementById(id);
+  function fmt(n, d) { return isFinite(n) ? n.toFixed(d == null ? 2 : d) : '—'; }
+  function deg2rad(d) { return d * Math.PI / 180; }
+
+  // Trapezoidal geometry helpers
+  function area(cr, ct, span) { return (cr + ct) / 2 * span; }
+  function mac(cr, ct) {
+    const lam = ct / cr;
+    return (2/3) * cr * (1 + lam + lam*lam) / (1 + lam);
+  }
+  function ymac(span, cr, ct) {
+    const lam = ct / cr;
+    return (span/6) * (1 + 2*lam) / (1 + lam); // from centerline to MAC, semi-span based on full span
+  }
+  // Helmbold / DATCOM lift-curve slope (per radian), M=0
+  function liftSlope(AR, sweepHalfChordDeg) {
+    const tanL = Math.tan(deg2rad(sweepHalfChordDeg));
+    return (2 * Math.PI * AR) / (2 + Math.sqrt(AR*AR * (1 + tanL*tanL) + 4));
+  }
+  // Approx mid-chord sweep from LE sweep (rough: assume taper reduces sweep slightly)
+  // We'll approximate half-chord sweep ≈ LE sweep minus a small correction based on taper.
+  function halfChordSweep(leSweepDeg, cr, ct, span) {
+    // tan(Λ_c/2) = tan(Λ_LE) - (cr - ct)/span * (some factor). Use standard:
+    // tan(Λ_n) = tan(Λ_LE) - (4n/AR)*((1-taper)/(1+taper)) where n is chord fraction (0.5 for half chord)
+    const AR = (span*span) / area(cr, ct, span);
+    const taper = ct / cr;
+    const tanLE = Math.tan(deg2rad(leSweepDeg));
+    const tanHalf = tanLE - (4 * 0.5 / AR) * ((1 - taper) / (1 + taper));
+    return Math.atan(tanHalf) * 180 / Math.PI;
+  }
+
+  // ---------- TIER 1 ----------
+  function computeTier1() {
+    const wCr = +$('wCr').value, wCt = +$('wCt').value, wSpan = +$('wSpan').value, wSweep = +$('wSweep').value;
+    const cCr = +$('cCr').value, cCt = +$('cCt').value, cSpan = +$('cSpan').value, cSweep = +$('cSweep').value;
+    const lRoot = +$('lRoot').value, etaC = +$('etaC').value, sm = +$('staticMargin').value;
+
+    const Sw = area(wCr, wCt, wSpan);
+    const Sc = area(cCr, cCt, cSpan);
+    const MACw = mac(wCr, wCt);
+    const MACc = mac(cCr, cCt);
+    const ARw = (wSpan*wSpan) / Sw;
+    const ARc = (cSpan*cSpan) / Sc;
+    const aw = liftSlope(ARw, halfChordSweep(wSweep, wCr, wCt, wSpan));
+    const ac = liftSlope(ARc, halfChordSweep(cSweep, cCr, cCt, cSpan));
+
+    // Each surface's AC sits aft of ITS OWN root LE by: X_mac (sweep-induced MAC shift) + 0.25*MAC.
+    // X_mac = Y_mac * tan(LE sweep), exactly as in the conventional/complex-wing calculators.
+    const wYmac = ymac(wSpan, wCr, wCt);
+    const cYmac = ymac(cSpan, cCr, cCt);
+    const wAcOffset = wYmac * Math.tan(deg2rad(wSweep)) + 0.25 * MACw; // aft of wing root LE
+    const cAcOffset = cYmac * Math.tan(deg2rad(cSweep)) + 0.25 * MACc; // aft of canard root LE
+
+    // Common coordinate: distance aft of the WING root LE.
+    // Wing AC:
+    const Xac_w = wAcOffset;
+    // Canard root LE sits lRoot ahead of wing root LE, so canard root LE is at -lRoot.
+    // Canard AC is cAcOffset aft of the canard root LE:
+    const Xac_c = -lRoot + cAcOffset;
+
+    // Derived AC-to-AC distance (canard ahead of wing): positive = canard AC forward of wing AC.
+    const Lc = Xac_w - Xac_c;
+
+    // Lift-weighted neutral point
+    const wWing = aw * Sw;
+    const wCan = ac * Sc * etaC;
+    const Xnp = (Xac_w * wWing + Xac_c * wCan) / (wWing + wCan);
+
+    const NPpct = (Xnp / MACw) * 100;
+    const CGpct = NPpct - sm;
+    const CGlen = (CGpct / 100) * MACw;
+
+    $('oWS').textContent = fmt(Sw, 0);
+    $('oWMAC').textContent = fmt(MACw, 1);
+    $('oWAR').textContent = fmt(ARw, 2);
+    $('oWa').textContent = fmt(aw, 3);
+    $('oCS').textContent = fmt(Sc, 0);
+    $('oCMAC').textContent = fmt(MACc, 1);
+    $('oCAR').textContent = fmt(ARc, 2);
+    $('oCa').textContent = fmt(ac, 3);
+    $('oCfrac').textContent = fmt(Sc/(Sc+Sw)*100, 1) + '%';
+    $('oWacOff').textContent = fmt(wAcOffset, 1);
+    $('oCacOff').textContent = fmt(cAcOffset, 1);
+    $('oLc').textContent = fmt(Lc, 1);
+    $('oNPlen').textContent = fmt(Xnp, 1);
+    $('oNPpct').textContent = fmt(NPpct, 1) + '%';
+    $('oCGpct').textContent = fmt(CGpct, 1) + '%';
+    $('oCGlen').textContent = fmt(CGlen, 1);
+
+    return { MACw, ARw, aw, wSweep, wCr, wCt, wSpan, Sw };
+  }
+
+  // ---------- TIER 2 (Polhamus) ----------
+  function computeTier2(t1) {
+    const acAtt = +$('acAttached').value / 100;
+    const acVor = +$('acVortex').value / 100;
+    const breakdown = +$('breakdownAoA').value;
+
+    const ARw = t1.ARw;
+    const sweepLE = t1.wSweep;
+
+    // Polhamus coefficients
+    // K_p ≈ linear lift-curve slope (per rad). K_v ≈ K_p * tan-related suction factor.
+    const Kp = t1.aw;
+    // Vortex lift constant: Polhamus gives Kv ≈ Kp * (some factor); a common approximation:
+    // Kv ≈ Kp * tan(Λ_LE) for highly swept, but bounded. Use a sweep-scaled fraction:
+    const Kv = Kp * Math.min(1.0, Math.tan(deg2rad(sweepLE)));
+
+    const aoaList = [0, 4, 8, 12, 16, 20, 24, 28, 32];
+    const rows = [];
+    let ac0 = null;
+    aoaList.forEach(a => {
+      const ar = deg2rad(a);
+      const sinA = Math.sin(ar), cosA = Math.cos(ar);
+      const CLp = Kp * sinA * cosA * cosA;
+      const CLv = Kv * sinA * sinA * cosA;
+      const CLtot = CLp + CLv;
+      let acLoc;
+      if (CLtot < 1e-6) {
+        acLoc = acAtt; // at zero AoA, AC = attached AC
+      } else {
+        acLoc = (acAtt * CLp + acVor * CLv) / CLtot;
+      }
+      const vortShare = CLtot < 1e-6 ? 0 : CLv / CLtot;
+      if (a === 0) ac0 = acLoc;
+      rows.push({ a, acLoc, shift: (acLoc - ac0), vortShare });
+    });
+
+    // Render table
+    let html = '';
+    rows.forEach(r => {
+      let zone = 'zone-good';
+      if (r.a > 15 && r.a <= breakdown) zone = 'zone-caution';
+      else if (r.a > breakdown) zone = 'zone-danger';
+      html += `<tr class="${zone}">
+        <td><b>${r.a}</b></td>
+        <td>${fmt(r.acLoc*100,1)}%</td>
+        <td>${(r.shift>=0?'+':'')}${fmt(r.shift*100,1)}%</td>
+        <td>${fmt(r.vortShare*100,0)}%</td>
+      </tr>`;
+    });
+    $('aoaTable').querySelector('tbody').innerHTML = html;
+
+    drawChart(rows, breakdown);
+    return { rows, ac0, Kp, Kv };
+  }
+
+  function drawChart(rows, breakdown) {
+    const svg = $('aoaChart');
+    const W = 480, H = 240, padL = 44, padR = 12, padT = 14, padB = 30;
+    const plotW = W - padL - padR, plotH = H - padT - padB;
+    const maxA = 32;
+    const acVals = rows.map(r => r.acLoc*100);
+    const minAC = Math.min(...acVals, 25), maxAC = Math.max(...acVals, 50);
+    const acLo = Math.floor(minAC/5)*5, acHi = Math.ceil(maxAC/5)*5;
+
+    const xOf = a => padL + (a/maxA)*plotW;
+    const yOf = ac => padT + (1 - (ac-acLo)/(acHi-acLo))*plotH;
+
+    let s = '';
+    // breakdown shaded zone
+    const bx = xOf(breakdown);
+    s += `<rect x="${bx}" y="${padT}" width="${W-padR-bx}" height="${plotH}" fill="#fdecea" opacity="0.6"/>`;
+    s += `<rect x="${xOf(15)}" y="${padT}" width="${bx-xOf(15)}" height="${plotH}" fill="#fff8e0" opacity="0.6"/>`;
+    s += `<rect x="${padL}" y="${padT}" width="${xOf(15)-padL}" height="${plotH}" fill="#eaf4ea" opacity="0.6"/>`;
+
+    // axes
+    s += `<line x1="${padL}" y1="${padT+plotH}" x2="${W-padR}" y2="${padT+plotH}" stroke="#999" stroke-width="1"/>`;
+    s += `<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${padT+plotH}" stroke="#999" stroke-width="1"/>`;
+    // y ticks
+    for (let v = acLo; v <= acHi; v += 5) {
+      const y = yOf(v);
+      s += `<line x1="${padL-4}" y1="${y}" x2="${padL}" y2="${y}" stroke="#999"/>`;
+      s += `<text x="${padL-7}" y="${y+3}" font-size="9" fill="#666" text-anchor="end" font-family="sans-serif">${v}%</text>`;
+    }
+    // x ticks
+    for (let a = 0; a <= maxA; a += 8) {
+      const x = xOf(a);
+      s += `<line x1="${x}" y1="${padT+plotH}" x2="${x}" y2="${padT+plotH+4}" stroke="#999"/>`;
+      s += `<text x="${x}" y="${padT+plotH+16}" font-size="9" fill="#666" text-anchor="middle" font-family="sans-serif">${a}°</text>`;
+    }
+    s += `<text x="${padL+plotW/2}" y="${H-2}" font-size="10" fill="#444" text-anchor="middle" font-family="sans-serif">Angle of attack</text>`;
+    s += `<text x="12" y="${padT+plotH/2}" font-size="10" fill="#444" text-anchor="middle" font-family="sans-serif" transform="rotate(-90 12 ${padT+plotH/2})">AC (% MAC)</text>`;
+
+    // breakdown line
+    s += `<line x1="${bx}" y1="${padT}" x2="${bx}" y2="${padT+plotH}" stroke="#c0392b" stroke-width="1.5" stroke-dasharray="4,3"/>`;
+    s += `<text x="${bx-3}" y="${padT+10}" font-size="9" fill="#c0392b" text-anchor="end" font-family="sans-serif">breakdown</text>`;
+
+    // data polyline
+    let pts = rows.map(r => `${xOf(r.a)},${yOf(r.acLoc*100)}`).join(' ');
+    s += `<polyline points="${pts}" fill="none" stroke="#1f3a5f" stroke-width="2"/>`;
+    rows.forEach(r => {
+      s += `<circle cx="${xOf(r.a)}" cy="${yOf(r.acLoc*100)}" r="3" fill="#1f3a5f"/>`;
+    });
+
+    svg.innerHTML = s;
+  }
+
+  // ---------- TIER 3 ----------
+  function computeTier3(t1, t2) {
+    const rho = +$('rho').value, V = +$('speed').value;
+    const wlA = +$('wlA').value, wlB = +$('wlB').value;
+
+    // Convert wing loading g/dm² to N/m²:  1 g/dm² = (0.001 kg)*(9.81) / (0.01 m²) = 0.981 N/m²
+    const toPa = wl => wl * 0.981;
+    const q = 0.5 * rho * V * V; // dynamic pressure Pa
+
+    function clFor(wlPa) { return wlPa / q; }
+    // Invert Polhamus total lift to find AoA giving target CL. Search 0..40°.
+    function aoaForCL(targetCL) {
+      const Kp = t2.Kp, Kv = t2.Kv;
+      let best = 0, bestErr = 1e9;
+      for (let a = 0; a <= 40; a += 0.25) {
+        const ar = deg2rad(a);
+        const CL = Kp*Math.sin(ar)*Math.cos(ar)*Math.cos(ar) + Kv*Math.sin(ar)*Math.sin(ar)*Math.cos(ar);
+        const err = Math.abs(CL - targetCL);
+        if (err < bestErr) { bestErr = err; best = a; }
+      }
+      return best;
+    }
+    function acAtAoA(a) {
+      const acAtt = +$('acAttached').value/100, acVor = +$('acVortex').value/100;
+      const Kp = t2.Kp, Kv = t2.Kv;
+      const ar = deg2rad(a);
+      const CLp = Kp*Math.sin(ar)*Math.cos(ar)*Math.cos(ar);
+      const CLv = Kv*Math.sin(ar)*Math.sin(ar)*Math.cos(ar);
+      const tot = CLp + CLv;
+      return tot < 1e-6 ? acAtt : (acAtt*CLp + acVor*CLv)/tot;
+    }
+
+    const clA = clFor(toPa(wlA)), clB = clFor(toPa(wlB));
+    const aoaA = aoaForCL(clA), aoaB = aoaForCL(clB);
+    const acA = acAtAoA(aoaA), acB = acAtAoA(aoaB);
+    const marginDelta = (acB - acA) * 100; // aft shift of AC = gain in static margin (positive = more stable)
+
+    $('oClA').textContent = fmt(clA, 3);
+    $('oAoaA').textContent = fmt(aoaA, 1) + '°';
+    $('oAcA').textContent = fmt(acA*100, 1) + '%';
+    $('oClB').textContent = fmt(clB, 3);
+    $('oAoaB').textContent = fmt(aoaB, 1) + '°';
+    $('oAcB').textContent = fmt(acB*100, 1) + '%';
+    $('oMarginDelta').textContent = (marginDelta>=0?'+':'') + fmt(marginDelta,1) + '%';
+
+    let interp;
+    if (Math.abs(marginDelta) < 0.3) {
+      interp = 'The two loadings trim at nearly the same AoA, so the felt static margin barely changes. Wing loading differences this small don\'t meaningfully move the balance.';
+    } else if (marginDelta > 0) {
+      interp = `Config B trims at a higher AoA (${fmt(aoaB,1)}° vs ${fmt(aoaA,1)}°), pushing the AC aft and <b>increasing</b> the felt static margin by about ${fmt(marginDelta,1)}% MAC. The heavier build feels slightly more stable at this speed — but stalls at a higher speed. Remember this is a relative, approximate indication.`;
+    } else {
+      interp = `Config B trims such that the AC sits forward of config A, <b>reducing</b> the felt static margin by about ${fmt(-marginDelta,1)}% MAC. Treat as a relative, approximate indication.`;
+    }
+    $('tier3Interpretation').innerHTML = interp;
+  }
+
+  function recomputeAll() {
+    const t1 = computeTier1();
+    const t2 = computeTier2(t1);
+    computeTier3(t1, t2);
+  }
+
+  // Attach listeners
+  ['wCr','wCt','wSpan','wSweep','cCr','cCt','cSpan','cSweep','lRoot','etaC','staticMargin',
+   'acAttached','acVortex','breakdownAoA','rho','speed','wlA','wlB'].forEach(id => {
+    $(id).addEventListener('input', recomputeAll);
+  });
+
+  recomputeAll();
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MAC & CG — Swept Wing Diagram + Calculator (V4)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f4f4f0;
+    margin: 0;
+    padding: 20px;
+    color: #222;
+  }
+  h1 { font-size: 1.4em; margin: 0 0 4px; }
+  h2 { font-size: 1.15em; margin: 0 0 6px; color: #1f3a5f; }
+  .subtitle { color: #666; margin-bottom: 18px; font-size: 0.95em; }
+
+  .top-section {
+    max-width: 1280px;
+    margin: 0 auto 24px;
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 20px;
+  }
+  @media (max-width: 980px) { .top-section { grid-template-columns: 1fr; } }
+
+  .calc-section {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 980px) { .calc-section { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  svg { width: 100%; height: auto; display: block; }
+
+  .legend { font-size: 0.9em; }
+  .step {
+    border-left: 3px solid #ccc;
+    padding: 6px 0 6px 12px;
+    margin-bottom: 8px;
+    transition: background 0.2s;
+  }
+  .step:hover { background: #fafafa; }
+  .step .num {
+    display: inline-block;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    color: #fff;
+    text-align: center;
+    line-height: 22px;
+    font-weight: bold;
+    font-size: 0.85em;
+    margin-right: 6px;
+  }
+  .step.measure .num { background: #2a7ab0; }
+  .step.compute .num { background: #c97a1a; }
+  .step.locate  .num { background: #2a9d4a; }
+  .step.cg      .num { background: #c0392b; }
+  .step.measure { border-left-color: #2a7ab0; }
+  .step.compute { border-left-color: #c97a1a; }
+  .step.locate  { border-left-color: #2a9d4a; }
+  .step.cg      { border-left-color: #c0392b; }
+  .term {
+    font-family: "Menlo", monospace;
+    background: #eee;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.9em;
+  }
+  .formula {
+    font-family: "Menlo", monospace;
+    background: #f7f0e0;
+    padding: 6px 8px;
+    border-radius: 4px;
+    margin: 6px 0;
+    font-size: 0.85em;
+    display: inline-block;
+  }
+  .key {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+    font-size: 0.85em;
+    color: #555;
+  }
+  .key div { margin: 3px 0; }
+  .swatch {
+    display: inline-block;
+    width: 14px; height: 3px;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  .input-group { margin-bottom: 12px; }
+  .input-group label {
+    display: block;
+    font-size: 0.9em;
+    color: #444;
+    margin-bottom: 4px;
+    font-weight: 600;
+  }
+  .input-group .desc {
+    font-size: 0.8em;
+    color: #888;
+    margin-bottom: 4px;
+    font-weight: normal;
+  }
+  .input-group input {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1em;
+    font-family: "Menlo", monospace;
+  }
+  .input-group input:focus {
+    outline: none;
+    border-color: #2a7ab0;
+    box-shadow: 0 0 0 2px rgba(42,122,176,0.2);
+  }
+  .results-section { margin-bottom: 18px; }
+  .results-section h3 {
+    font-size: 1em;
+    margin: 0 0 8px;
+    color: #1f3a5f;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 4px;
+  }
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 0.92em;
+  }
+  .result-row .label { color: #555; }
+  .result-row .value {
+    font-family: "Menlo", monospace;
+    font-weight: 600;
+    color: #1f3a5f;
+  }
+  table.cg-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88em;
+  }
+  table.cg-table th, table.cg-table td {
+    padding: 5px 8px;
+    text-align: right;
+    border-bottom: 1px solid #eee;
+  }
+  table.cg-table th {
+    background: #f7f0e0;
+    font-weight: 600;
+    color: #6b4a0e;
+    text-align: right;
+  }
+  table.cg-table th:first-child, table.cg-table td:first-child {
+    text-align: left;
+  }
+  table.cg-table td { font-family: "Menlo", monospace; }
+  table.cg-table tr.highlight-conservative { background: #eaf4ea; }
+  table.cg-table tr.highlight-sport { background: #fff8e0; }
+  table.cg-table tr.highlight-aggressive { background: #fde8e3; }
+
+  .legend-bar {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+    font-size: 0.78em;
+    color: #555;
+    flex-wrap: wrap;
+  }
+  .legend-bar .item { display: flex; align-items: center; gap: 4px; }
+  .legend-bar .swatch-box {
+    width: 14px; height: 14px;
+    border: 1px solid #ccc;
+    border-radius: 2px;
+  }
+  .formula-note {
+    font-size: 0.78em;
+    color: #888;
+    margin-top: 6px;
+    font-style: italic;
+  }
+  .note-box {
+    background: #fff8e0;
+    border-left: 3px solid #c97a1a;
+    padding: 8px 12px;
+    margin-top: 12px;
+    font-size: 0.85em;
+    color: #6b4a0e;
+    border-radius: 0 4px 4px 0;
+  }
+  .sweep-info {
+    font-size: 0.82em;
+    color: #2a7ab0;
+    background: #eaf2fa;
+    padding: 6px 10px;
+    border-radius: 4px;
+    margin-top: 6px;
+    display: none;
+  }
+  .sweep-info.active { display: block; }
+  hr.section-divider {
+    max-width: 1280px;
+    margin: 24px auto;
+    border: none;
+    border-top: 2px dashed #ccc;
+  }
+</style>
+</head>
+<body>
+
+<h1>Finding MAC, X_mac, Y_mac, and CG on a Swept Wing</h1>
+<div class="subtitle">Top-down view of a left wing panel with backward (aft) sweep. Forward is up, aft is down. Fuselage runs vertically on the right. Steps numbered in execution order.</div>
+
+<!-- ============================================================
+     TOP SECTION: Diagram + Step Legend
+============================================================ -->
+<div class="top-section">
+
+  <div class="panel">
+    <svg viewBox="0 0 800 540" xmlns="http://www.w3.org/2000/svg">
+      <!-- ============================================================
+           V4 GEOMETRY — shifted left, semi-span compressed:
+           
+           Fuselage centerline at x = 660
+           Fuselage half-width = 30, so fuselage spans x = 630..690
+           
+           Wing semi-span = 480 px (instead of 600)  
+           Root LE (centerline):  (660, 100)
+           Root TE (centerline):  (660, 300)   → Cr = 200
+           Tip  LE:               (180, 196)   → 480 px span, 96 px sweep
+           Tip  TE:               (180, 296)   → Ct = 100
+           
+           Sweep angle: tan = 96/480 = 0.2 → ~11.3°
+           
+           Computed:
+             λ = 0.5
+             MAC = (2/3)(200)(1.75/1.5) = 155.56
+             Y_mac (full b = 2 × 480 = 960):  
+               (960/6)(2/1.5) = 213.33 from centerline
+               Hmm, that's larger than semi-span which is wrong.
+             
+             Wait — let me redo: Y_mac formula uses FULL span b:
+             Y_mac = (b/6) × (1 + 2λ)/(1 + λ)
+             For λ=0.5: = (b/6)(2/1.5) = b × 0.2222
+             For b = 960: Y_mac = 213.33  
+             
+             But Y_mac should be ≤ semi-span (480). 213/480 = 44.4% of semi-span. ✓ valid.
+             
+             So MAC station is at x = 660 - 213.33 = 446.67
+             Sweep at that station: 96 × (213.33/480) = 42.67
+             MAC LE y-coord: 100 + 42.67 = 142.67
+             Local chord at MAC station: 200 - (213.33/480)*100 = 200 - 44.44 = 155.56 ✓
+             MAC TE y-coord: 142.67 + 155.56 = 298.22
+             
+             Note: MAC TE (298.22) is essentially on the wing TE line.
+             Let's verify wing TE slope: (296-300)/(180-660) = -4/-480 = 0.00833
+             At x=446.67: y = 300 + 0.00833*(446.67-660) = 300 - 1.78 = 298.22 ✓
+             
+             So MAC line endpoints:
+               LE: (446.67, 142.67)
+               TE: (446.67, 298.22)
+             
+             25% MAC point: y = 142.67 + 0.25 × 155.56 = 181.56
+             Point: (446.67, 181.56)
+             
+             X_mac = 142.67 - 100 = 42.67
+        ============================================================ -->
+
+      <!-- Orientation reference arrows (top-left, compact) -->
+      <g font-family="sans-serif" font-size="11" fill="#888">
+        <line x1="35" y1="55" x2="35" y2="18" stroke="#888" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="42" y="28">Forward (nose)</text>
+        <line x1="35" y1="55" x2="35" y2="95" stroke="#888" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="42" y="90">Aft (tail)</text>
+        <line x1="35" y1="55" x2="92" y2="55" stroke="#888" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="50" y="49">Inboard →</text>
+      </g>
+
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#888"/>
+        </marker>
+        <marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#c0392b"/>
+        </marker>
+        <marker id="arrGreen" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#2a9d4a"/>
+        </marker>
+      </defs>
+
+      <!-- Fuselage strip -->
+      <rect x="630" y="50" width="60" height="470" fill="#d8d8d8" stroke="#aaa"/>
+      <text x="660" y="44" font-family="sans-serif" font-size="11" fill="#666" text-anchor="middle">Fuselage</text>
+      <!-- Fuselage centerline (dashed) -->
+      <line x1="660" y1="15" x2="660" y2="530" stroke="#888" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="660" y="525" font-family="sans-serif" font-size="9" fill="#666" text-anchor="middle">centerline</text>
+
+      <!-- ============================================================
+           WING PLANFORM (gross wing, extended to centerline)
+        ============================================================ -->
+      <polygon points="660,100 660,300 180,296 180,196"
+               fill="#e8f1f8" stroke="#1f3a5f" stroke-width="2"/>
+
+      <!-- Phantom extension inside fuselage (from fuselage side x=630 to centerline x=660) -->
+      <!-- LE at x=630: y = 100 + (-0.2)*(630-660) = 100 + 6 = 106 -->
+      <!-- TE at x=630: y = 300 + (-0.00833)*(630-660) = 300 + 0.25 ≈ 300.25 -->
+      <polygon points="660,100 660,300 630,300.25 630,106"
+               fill="#f4e8d0" stroke="#c97a1a" stroke-width="1" stroke-dasharray="3,2" opacity="0.7"/>
+
+      <!-- Leading edge highlight -->
+      <line x1="660" y1="100" x2="180" y2="196" stroke="#1f3a5f" stroke-width="3"/>
+      <text x="380" y="135" font-family="sans-serif" font-size="11" fill="#1f3a5f" font-style="italic">leading edge (LE)</text>
+      <text x="380" y="313" font-family="sans-serif" font-size="11" fill="#1f3a5f" font-style="italic">trailing edge (TE)</text>
+
+      <!-- Label the phantom region -->
+      <text x="585" y="370" font-family="sans-serif" font-size="9" fill="#c97a1a" font-style="italic" text-anchor="middle">extended wing</text>
+      <text x="585" y="382" font-family="sans-serif" font-size="9" fill="#c97a1a" font-style="italic" text-anchor="middle">(into fuselage)</text>
+      <line x1="615" y1="365" x2="645" y2="200" stroke="#c97a1a" stroke-width="0.8" stroke-dasharray="2,2"/>
+
+      <!-- ============================================================
+           STEP 1 — Root chord (Cr) — at centerline
+        ============================================================ -->
+      <line x1="697" y1="100" x2="697" y2="300" stroke="#2a7ab0" stroke-width="2"/>
+      <line x1="692" y1="100" x2="702" y2="100" stroke="#2a7ab0" stroke-width="2"/>
+      <line x1="692" y1="300" x2="702" y2="300" stroke="#2a7ab0" stroke-width="2"/>
+      <text x="708" y="195" font-family="sans-serif" font-size="13" fill="#2a7ab0" font-weight="bold">① Cr</text>
+      <text x="708" y="210" font-family="sans-serif" font-size="9" fill="#2a7ab0">root chord</text>
+      <text x="708" y="221" font-family="sans-serif" font-size="9" fill="#2a7ab0">(at centerline)</text>
+
+      <!-- ============================================================
+           STEP 2 — Tip chord (Ct)
+        ============================================================ -->
+      <line x1="165" y1="196" x2="165" y2="296" stroke="#2a7ab0" stroke-width="2"/>
+      <line x1="160" y1="196" x2="170" y2="196" stroke="#2a7ab0" stroke-width="2"/>
+      <line x1="160" y1="296" x2="170" y2="296" stroke="#2a7ab0" stroke-width="2"/>
+      <text x="125" y="243" font-family="sans-serif" font-size="13" fill="#2a7ab0" font-weight="bold">② Ct</text>
+      <text x="118" y="256" font-family="sans-serif" font-size="9" fill="#2a7ab0">tip chord</text>
+
+      <!-- ============================================================
+           STEP 3 — Semi-span (b/2) — from centerline to tip
+        ============================================================ -->
+      <line x1="180" y1="495" x2="660" y2="495" stroke="#2a7ab0" stroke-width="2"/>
+      <line x1="180" y1="490" x2="180" y2="500" stroke="#2a7ab0" stroke-width="2"/>
+      <line x1="660" y1="490" x2="660" y2="500" stroke="#2a7ab0" stroke-width="2"/>
+      <text x="420" y="488" font-family="sans-serif" font-size="13" fill="#2a7ab0" font-weight="bold" text-anchor="middle">③ b/2 (semi-span, centerline to tip)</text>
+
+      <!-- ============================================================
+           STEP 4 — Sweep angle (Λ_LE)
+        ============================================================ -->
+      <line x1="660" y1="100" x2="660" y2="135" stroke="#c97a1a" stroke-width="1" stroke-dasharray="3,2"/>
+      <path d="M 660 130 A 30 30 0 0 0 645 134" stroke="#c97a1a" stroke-width="1.5" fill="none"/>
+      <text x="638" y="148" font-family="sans-serif" font-size="11" fill="#c97a1a" font-weight="bold">④ Λ</text>
+      <text x="615" y="160" font-family="sans-serif" font-size="9" fill="#c97a1a">sweep angle</text>
+
+      <!-- ============================================================
+           STEP 6 — Y_mac (spanwise location of MAC, from centerline)
+                    Marked above wing with horizontal bracket
+        ============================================================ -->
+      <line x1="446.67" y1="35" x2="660" y2="35" stroke="#c97a1a" stroke-width="2"/>
+      <line x1="446.67" y1="30" x2="446.67" y2="40" stroke="#c97a1a" stroke-width="2"/>
+      <line x1="660" y1="30" x2="660" y2="40" stroke="#c97a1a" stroke-width="2"/>
+      <text x="553" y="27" font-family="sans-serif" font-size="13" fill="#c97a1a" font-weight="bold" text-anchor="middle">⑥ Y_mac</text>
+
+      <!-- Vertical dashed line marking MAC spanwise station -->
+      <line x1="446.67" y1="35" x2="446.67" y2="510" stroke="#c97a1a" stroke-width="1.5" stroke-dasharray="5,4"/>
+      <text x="446.67" y="510" font-family="sans-serif" font-size="9" fill="#c97a1a" text-anchor="middle">MAC station</text>
+
+      <!-- ============================================================
+           STEP 7 — X_mac (aft shift due to sweep)
+                    Shown as vertical dimension near centerline
+        ============================================================ -->
+      <!-- Horizontal dashed reference from root LE to MAC station -->
+      <line x1="660" y1="100" x2="446.67" y2="100" stroke="#c97a1a" stroke-width="1" stroke-dasharray="2,3"/>
+      <!-- Vertical X_mac dimension -->
+      <line x1="600" y1="100" x2="600" y2="142.67" stroke="#c97a1a" stroke-width="2.5"/>
+      <line x1="595" y1="100" x2="605" y2="100" stroke="#c97a1a" stroke-width="2"/>
+      <line x1="595" y1="142.67" x2="605" y2="142.67" stroke="#c97a1a" stroke-width="2"/>
+      <text x="552" y="127" font-family="sans-serif" font-size="13" fill="#c97a1a" font-weight="bold" text-anchor="end">⑦ X_mac</text>
+
+      <!-- Connector dashed line from MAC LE to X_mac dimension marker -->
+      <line x1="446.67" y1="142.67" x2="600" y2="142.67" stroke="#c97a1a" stroke-width="1" stroke-dasharray="2,3"/>
+      <text x="523" y="156" font-family="sans-serif" font-size="9" fill="#c97a1a" font-style="italic" text-anchor="middle">MAC LE is X_mac aft of root LE</text>
+
+      <!-- ============================================================
+           STEP 8 — MAC line drawn at MAC station
+                    OFFSET visually from the wing to make it clear it's
+                    a separate construction line, not the TE
+        ============================================================ -->
+      <!-- Draw MAC line slightly offset to the LEFT of the actual MAC station, 
+           with connecting tie-lines, so it visually separates from the TE -->
+      <!-- MAC station x = 446.67. Offset MAC line to x = 415 -->
+      <line x1="415" y1="142.67" x2="415" y2="298.22" stroke="#2a9d4a" stroke-width="5"/>
+      <circle cx="415" cy="142.67" r="5" fill="#2a9d4a"/>
+      <circle cx="415" cy="298.22" r="5" fill="#2a9d4a"/>
+      
+      <!-- Tie lines connecting actual wing LE/TE points to the offset MAC line -->
+      <line x1="446.67" y1="142.67" x2="415" y2="142.67" stroke="#2a9d4a" stroke-width="1.5" stroke-dasharray="2,2"/>
+      <line x1="446.67" y1="298.22" x2="415" y2="298.22" stroke="#2a9d4a" stroke-width="1.5" stroke-dasharray="2,2"/>
+      <!-- Endpoint markers on the wing -->
+      <circle cx="446.67" cy="142.67" r="3.5" fill="#2a9d4a" stroke="#fff" stroke-width="1"/>
+      <circle cx="446.67" cy="298.22" r="3.5" fill="#2a9d4a" stroke="#fff" stroke-width="1"/>
+
+      <text x="335" y="215" font-family="sans-serif" font-size="13" fill="#2a9d4a" font-weight="bold">⑧ MAC line</text>
+      <text x="335" y="228" font-family="sans-serif" font-size="9" fill="#2a9d4a">(length = MAC,</text>
+      <text x="335" y="239" font-family="sans-serif" font-size="9" fill="#2a9d4a">parallel to centerline,</text>
+      <text x="335" y="250" font-family="sans-serif" font-size="9" fill="#2a9d4a">shown offset for clarity)</text>
+
+      <!-- ============================================================
+           STEP 9 — Mark %MAC point (25% example) on the MAC line
+                    25% along the green offset line: y = 142.67 + 38.89 = 181.56
+        ============================================================ -->
+      <circle cx="415" cy="181.56" r="6" fill="#c0392b" stroke="#fff" stroke-width="2"/>
+      <text x="355" y="185" font-family="sans-serif" font-size="13" fill="#c0392b" font-weight="bold" text-anchor="end">⑨ 25% MAC</text>
+
+      <!-- Mini bracket showing 25% along MAC -->
+      <line x1="425" y1="142.67" x2="430" y2="142.67" stroke="#c0392b" stroke-width="1"/>
+      <line x1="425" y1="181.56" x2="430" y2="181.56" stroke="#c0392b" stroke-width="1"/>
+      <line x1="427.5" y1="142.67" x2="427.5" y2="181.56" stroke="#c0392b" stroke-width="1"/>
+      <text x="433" y="167" font-family="sans-serif" font-size="9" fill="#c0392b">25%</text>
+
+      <!-- ============================================================
+           STEP 10 — Project %MAC point to centerline → CG point
+                    Project from the offset MAC line position over to centerline.
+                    The corresponding y on the centerline is the same y = 181.56
+        ============================================================ -->
+      <line x1="415" y1="181.56" x2="655" y2="181.56" stroke="#c0392b" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arrRed)"/>
+      <text x="535" y="176" font-family="sans-serif" font-size="10" fill="#c0392b" font-style="italic" text-anchor="middle">⑩ project to centerline</text>
+
+      <!-- CG balance point -->
+      <circle cx="660" cy="181.56" r="8" fill="#c0392b" stroke="#fff" stroke-width="2"/>
+      <circle cx="660" cy="181.56" r="3" fill="#fff"/>
+
+      <!-- Final CG distance dimension on the right side -->
+      <line x1="745" y1="100" x2="745" y2="181.56" stroke="#c0392b" stroke-width="2"/>
+      <line x1="740" y1="100" x2="750" y2="100" stroke="#c0392b" stroke-width="2"/>
+      <line x1="740" y1="181.56" x2="750" y2="181.56" stroke="#c0392b" stroke-width="2"/>
+      <text x="753" y="135" font-family="sans-serif" font-size="11" fill="#c0392b" font-weight="bold">⚖ CG</text>
+      <text x="753" y="148" font-family="sans-serif" font-size="9" fill="#c0392b">distance aft</text>
+      <text x="753" y="158" font-family="sans-serif" font-size="9" fill="#c0392b">of root LE</text>
+      <text x="753" y="170" font-family="sans-serif" font-size="9" fill="#c0392b">= X_mac +</text>
+      <text x="753" y="180" font-family="sans-serif" font-size="9" fill="#c0392b">(%MAC × MAC)</text>
+
+      <!-- Mark root LE -->
+      <circle cx="660" cy="100" r="4" fill="#1f3a5f"/>
+      <text x="650" y="93" font-family="sans-serif" font-size="9" fill="#1f3a5f" text-anchor="end">root LE</text>
+      <text x="650" y="103" font-family="sans-serif" font-size="9" fill="#1f3a5f" text-anchor="end">(at centerline)</text>
+
+    </svg>
+  </div>
+
+  <!-- Step legend -->
+  <div class="panel legend">
+    <h2>Steps</h2>
+
+    <div class="step measure"><span class="num">1</span><b>Measure Cr</b> at the <i>fuselage centerline</i>. For swept wings, extrapolate the LE and TE lines inward from the fuselage side to the centerline — the chord between those extrapolated points is your Cr.</div>
+
+    <div class="step measure"><span class="num">2</span><b>Measure Ct</b> — tip chord, parallel to centerline</div>
+
+    <div class="step measure"><span class="num">3</span><b>Measure b/2</b> — semi-span, perpendicular from centerline to tip (not along the swept LE)</div>
+
+    <div class="step measure"><span class="num">4</span><b>Measure Λ</b> — leading-edge sweep angle. 0° if LE is perpendicular to fuselage; positive for backward sweep, negative for forward sweep</div>
+
+    <div class="step compute"><span class="num">5</span><b>Compute MAC length</b>
+      <div class="formula">MAC = (2/3)·Cr·(1+λ+λ²)/(1+λ)</div>
+      <span class="term">λ = Ct / Cr</span>
+    </div>
+
+    <div class="step compute"><span class="num">6</span><b>Compute Y_mac</b> — spanwise distance from centerline to where the MAC "lives"
+      <div class="formula">Y_mac = (b/6)·(1+2λ)/(1+λ)</div>
+    </div>
+
+    <div class="step compute"><span class="num">7</span><b>Compute X_mac</b> — how far aft of the root LE the MAC's leading edge sits, due to sweep
+      <div class="formula">X_mac = Y_mac · tan(Λ)</div>
+      Zero for unswept wings. Positive (aft) for backward sweep. Negative (forward) for forward sweep.
+    </div>
+
+    <div class="step locate"><span class="num">8</span><b>Draw the MAC line</b> at the MAC station, parallel to centerline, from wing LE to wing TE. Its length should equal MAC. The MAC's LE will sit X_mac aft of the root LE. (In the diagram the line is drawn slightly offset to the left for visibility — on your actual wing it lives right on the MAC station, between LE and TE.)</div>
+
+    <div class="step cg"><span class="num">9</span><b>Mark %MAC point</b> on the MAC line, aft from its LE. Starting values: 25% (safe), 30% (sport), 33%+ (aerobatic).</div>
+
+    <div class="step cg"><span class="num">10</span><b>Project to centerline</b> — perpendicular from the %MAC point to the fuselage. That intersection is the CG.<br>
+      <span style="font-size:0.85em; color:#555;">CG distance aft of root LE (along centerline) = <span class="term">X_mac + (%MAC × MAC)</span></span>
+    </div>
+
+    <div class="key">
+      <div><span class="swatch" style="background:#2a7ab0"></span><b>Blue</b> — measured on the wing</div>
+      <div><span class="swatch" style="background:#c97a1a"></span><b>Orange</b> — computed values</div>
+      <div><span class="swatch" style="background:#2a9d4a"></span><b>Green</b> — MAC drawn on wing</div>
+      <div><span class="swatch" style="background:#c0392b"></span><b>Red</b> — CG location</div>
+    </div>
+  </div>
+
+</div>
+
+<hr class="section-divider">
+
+<!-- ============================================================
+     BOTTOM SECTION: Calculator
+============================================================ -->
+<h2 style="max-width:1280px; margin: 0 auto 12px;">Live Calculator</h2>
+<div class="subtitle" style="max-width:1280px; margin: 0 auto 16px;">Enter your wing measurements; results recompute live. Use consistent units (mm, cm, or inches).</div>
+
+<div class="calc-section">
+
+  <div class="panel">
+    <div class="input-group">
+      <label>Wingspan (b)</label>
+      <div class="desc">Tip-to-tip, including fuselage width</div>
+      <input type="number" id="b" value="1300" step="1">
+    </div>
+
+    <div class="input-group">
+      <label>Root chord (Cr)</label>
+      <div class="desc">Chord at centerline (extrapolated if swept)</div>
+      <input type="number" id="cr" value="320" step="1">
+    </div>
+
+    <div class="input-group">
+      <label>Tip chord (Ct)</label>
+      <div class="desc">Chord at outermost lifting station</div>
+      <input type="number" id="ct" value="180" step="1">
+    </div>
+
+    <div class="input-group">
+      <label>LE sweep angle (Λ)</label>
+      <div class="desc">Degrees. 0° = unswept. Negative for forward sweep.</div>
+      <input type="number" id="sweep" value="0" step="0.5">
+      <div id="sweepInfo" class="sweep-info">
+        With non-zero sweep, the CG point on the centerline sits X_mac aft of the root LE.
+      </div>
+    </div>
+
+    <div class="note-box">
+      <b>Tip:</b> Measure all chords parallel to the fuselage centerline (nose-to-tail), not along the area where wing meets fuselage side.
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="results-section">
+      <h3>Computed wing geometry</h3>
+      <div class="result-row"><span class="label">Taper ratio (λ = Ct / Cr)</span><span class="value" id="lambda">—</span></div>
+      <div class="result-row"><span class="label">MAC length</span><span class="value" id="mac">—</span></div>
+      <div class="result-row"><span class="label">Y_mac (spanwise position of MAC, from centerline)</span><span class="value" id="ymac">—</span></div>
+      <div class="result-row"><span class="label">X_mac (MAC LE aft of root LE)</span><span class="value" id="xmac">—</span></div>
+      <div class="formula-note">
+        MAC = (2/3)·Cr·(1+λ+λ²)/(1+λ) · Y_mac = (b/6)·(1+2λ)/(1+λ) · X_mac = Y_mac · tan(Λ)
+      </div>
+    </div>
+
+    <div class="results-section">
+      <h3>CG locations at various %MAC settings</h3>
+      <p style="font-size:0.85em; color:#666; margin: 4px 0 10px;">
+        <b>From MAC LE</b> = distance aft along the MAC line itself.<br>
+        <b>From root LE</b> = distance aft of the root LE, measured along the fuselage centerline. <i>This is what you'd mark on your fuselage to find the CG balance point.</i>
+      </p>
+      <table class="cg-table">
+        <thead>
+          <tr>
+            <th>%MAC</th>
+            <th>From MAC LE</th>
+            <th>From root LE (on fuselage)</th>
+          </tr>
+        </thead>
+        <tbody id="cgTable"></tbody>
+      </table>
+      <div class="legend-bar">
+        <div class="item"><div class="swatch-box" style="background:#eaf4ea"></div>Conservative / nose-heavy (22–26%)</div>
+        <div class="item"><div class="swatch-box" style="background:#fff8e0"></div>Sport / neutral (28–32%)</div>
+        <div class="item"><div class="swatch-box" style="background:#fde8e3"></div>Aggressive / 3D-aerobatic (34–40%)</div>
+      </div>
+    </div>
+
+    <div class="note-box">
+      <b>Reminder:</b> The "From root LE" column already accounts for sweep. To find the balance point on your model, measure that distance aft from where the root LE meets the fuselage, marked along the fuselage centerline. Always start at a more forward CG for the maiden flight and progressively move aft. Use dive/stall/inverted-trim flight tests to confirm.
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function() {
+  const els = {
+    b: document.getElementById('b'),
+    cr: document.getElementById('cr'),
+    ct: document.getElementById('ct'),
+    sweep: document.getElementById('sweep'),
+    lambda: document.getElementById('lambda'),
+    mac: document.getElementById('mac'),
+    ymac: document.getElementById('ymac'),
+    xmac: document.getElementById('xmac'),
+    cgTable: document.getElementById('cgTable'),
+    sweepInfo: document.getElementById('sweepInfo'),
+  };
+
+  function fmt(n, digits) {
+    if (!isFinite(n)) return '—';
+    return n.toFixed(digits == null ? 2 : digits);
+  }
+
+  function recompute() {
+    const b = parseFloat(els.b.value);
+    const Cr = parseFloat(els.cr.value);
+    const Ct = parseFloat(els.ct.value);
+    const sweepDeg = parseFloat(els.sweep.value) || 0;
+
+    if (!(b > 0) || !(Cr > 0) || !(Ct > 0)) {
+      els.lambda.textContent = '—';
+      els.mac.textContent = '—';
+      els.ymac.textContent = '—';
+      els.xmac.textContent = '—';
+      els.cgTable.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#999;">Enter valid measurements</td></tr>';
+      return;
+    }
+
+    const lambda = Ct / Cr;
+    const MAC = (2/3) * Cr * (1 + lambda + lambda*lambda) / (1 + lambda);
+    const Ymac = (b/6) * (1 + 2*lambda) / (1 + lambda);
+    const sweepRad = sweepDeg * Math.PI / 180;
+    const Xmac = Ymac * Math.tan(sweepRad);
+
+    els.lambda.textContent = fmt(lambda, 4);
+    els.mac.textContent = fmt(MAC, 2);
+    els.ymac.textContent = fmt(Ymac, 2);
+    els.xmac.textContent = fmt(Xmac, 2);
+
+    if (Math.abs(sweepDeg) > 0.01) els.sweepInfo.classList.add('active');
+    else els.sweepInfo.classList.remove('active');
+
+    let rows = '';
+    for (let pct = 22; pct <= 40; pct += 2) {
+      const fromMacLE = (pct/100) * MAC;
+      const fromRootLE = Xmac + fromMacLE;
+      let cls = '';
+      if (pct <= 26) cls = 'highlight-conservative';
+      else if (pct >= 28 && pct <= 32) cls = 'highlight-sport';
+      else if (pct >= 34) cls = 'highlight-aggressive';
+      rows += `<tr class="${cls}"><td><b>${pct}%</b></td><td>${fmt(fromMacLE, 2)}</td><td>${fromRootLE.toFixed(2)}</td></tr>`;
+    }
+    els.cgTable.innerHTML = rows;
+  }
+
+  ['b','cr','ct','sweep'].forEach(id => {
+    document.getElementById(id).addEventListener('input', recompute);
+  });
+
+  recompute();
+})();
+</script>
+
+</body>
+</html>

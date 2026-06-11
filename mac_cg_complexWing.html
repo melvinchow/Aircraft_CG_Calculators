@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>MAC & CG — Complex Wing (Piecewise Trapezoidal)</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #f4f4f0;
+    margin: 0;
+    padding: 20px;
+    color: #222;
+  }
+  h1 { font-size: 1.4em; margin: 0 0 4px; }
+  h2 { font-size: 1.15em; margin: 0 0 6px; color: #1f3a5f; }
+  .subtitle { color: #666; margin-bottom: 18px; font-size: 0.95em; }
+
+  .top-section, .calc-section, .glossary-section {
+    max-width: 1280px;
+    margin: 0 auto 24px;
+  }
+  .top-section {
+    display: grid;
+    grid-template-columns: 1fr 360px;
+    gap: 20px;
+  }
+  @media (max-width: 980px) { .top-section { grid-template-columns: 1fr; } }
+
+  .calc-section {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 20px;
+  }
+  @media (max-width: 980px) { .calc-section { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  svg { width: 100%; height: auto; display: block; }
+
+  .legend { font-size: 0.9em; }
+  .step {
+    border-left: 3px solid #ccc;
+    padding: 6px 0 6px 12px;
+    margin-bottom: 8px;
+  }
+  .step .num {
+    display: inline-block;
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    color: #fff;
+    text-align: center;
+    line-height: 22px;
+    font-weight: bold;
+    font-size: 0.85em;
+    margin-right: 6px;
+  }
+  .step.measure .num { background: #2a7ab0; }
+  .step.compute .num { background: #c97a1a; }
+  .step.locate  .num { background: #2a9d4a; }
+  .step.cg      .num { background: #c0392b; }
+  .step.measure { border-left-color: #2a7ab0; }
+  .step.compute { border-left-color: #c97a1a; }
+  .step.locate  { border-left-color: #2a9d4a; }
+  .step.cg      { border-left-color: #c0392b; }
+  .term {
+    font-family: "Menlo", monospace;
+    background: #eee;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 0.9em;
+  }
+  .formula {
+    font-family: "Menlo", monospace;
+    background: #f7f0e0;
+    padding: 6px 8px;
+    border-radius: 4px;
+    margin: 6px 0;
+    font-size: 0.85em;
+    display: inline-block;
+  }
+  .key {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+    font-size: 0.85em;
+    color: #555;
+  }
+  .key div { margin: 3px 0; }
+  .swatch {
+    display: inline-block;
+    width: 14px; height: 3px;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  .input-group { margin-bottom: 10px; }
+  .input-group label {
+    display: block;
+    font-size: 0.88em;
+    color: #444;
+    margin-bottom: 3px;
+    font-weight: 600;
+  }
+  .input-group .desc {
+    font-size: 0.78em;
+    color: #888;
+    margin-bottom: 3px;
+    font-weight: normal;
+  }
+  .input-group input, .input-group select {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 0.95em;
+    font-family: "Menlo", monospace;
+  }
+  .input-group input:focus, .input-group select:focus {
+    outline: none;
+    border-color: #2a7ab0;
+    box-shadow: 0 0 0 2px rgba(42,122,176,0.2);
+  }
+
+  .stations-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-top: 4px;
+  }
+  .stations-grid .input-group { margin-bottom: 4px; }
+  .stations-grid label { font-size: 0.82em; }
+  .stations-grid input { padding: 5px 8px; font-size: 0.9em; }
+
+  .station-row {
+    background: #f8f8f4;
+    padding: 6px 8px;
+    border-radius: 4px;
+    margin-bottom: 6px;
+  }
+  .station-row .station-title {
+    font-size: 0.78em;
+    color: #555;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .validation {
+    margin-top: 6px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    font-size: 0.82em;
+  }
+  .validation.ok {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border-left: 3px solid #4caf50;
+  }
+  .validation.warn {
+    background: #ffebee;
+    color: #c62828;
+    border-left: 3px solid #e53935;
+  }
+
+  .results-section { margin-bottom: 18px; }
+  .results-section h3 {
+    font-size: 1em;
+    margin: 0 0 8px;
+    color: #1f3a5f;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 4px;
+  }
+  .result-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    font-size: 0.92em;
+  }
+  .result-row .label { color: #555; }
+  .result-row .value {
+    font-family: "Menlo", monospace;
+    font-weight: 600;
+    color: #1f3a5f;
+  }
+
+  table.section-breakdown, table.cg-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85em;
+  }
+  table.section-breakdown th, table.section-breakdown td,
+  table.cg-table th, table.cg-table td {
+    padding: 5px 7px;
+    text-align: right;
+    border-bottom: 1px solid #eee;
+  }
+  table.section-breakdown th, table.cg-table th {
+    background: #f7f0e0;
+    font-weight: 600;
+    color: #6b4a0e;
+  }
+  table.section-breakdown th:first-child, table.section-breakdown td:first-child,
+  table.cg-table th:first-child, table.cg-table td:first-child {
+    text-align: left;
+  }
+  table.section-breakdown td, table.cg-table td { font-family: "Menlo", monospace; }
+  table.cg-table tr.highlight-conservative { background: #eaf4ea; }
+  table.cg-table tr.highlight-sport { background: #fff8e0; }
+  table.cg-table tr.highlight-aggressive { background: #fde8e3; }
+
+  .legend-bar {
+    display: flex;
+    gap: 12px;
+    margin-top: 8px;
+    font-size: 0.78em;
+    color: #555;
+    flex-wrap: wrap;
+  }
+  .legend-bar .item { display: flex; align-items: center; gap: 4px; }
+  .legend-bar .swatch-box {
+    width: 14px; height: 14px;
+    border: 1px solid #ccc;
+    border-radius: 2px;
+  }
+
+  .formula-note {
+    font-size: 0.78em;
+    color: #888;
+    margin-top: 6px;
+    font-style: italic;
+  }
+  .note-box {
+    background: #fff8e0;
+    border-left: 3px solid #c97a1a;
+    padding: 8px 12px;
+    margin-top: 12px;
+    font-size: 0.85em;
+    color: #6b4a0e;
+    border-radius: 0 4px 4px 0;
+  }
+  .glossary {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 18px 22px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .glossary h2 { margin-bottom: 12px; }
+  .glossary dl {
+    margin: 0;
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 8px 16px;
+    font-size: 0.9em;
+  }
+  .glossary dt {
+    font-family: "Menlo", monospace;
+    color: #1f3a5f;
+    font-weight: 600;
+  }
+  .glossary dd { margin: 0; color: #444; }
+  .glossary h3 {
+    margin: 18px 0 8px;
+    font-size: 0.95em;
+    color: #6b4a0e;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 4px;
+  }
+
+  hr.section-divider {
+    max-width: 1280px;
+    margin: 24px auto;
+    border: none;
+    border-top: 2px dashed #ccc;
+  }
+</style>
+</head>
+<body>
+
+<h1>MAC &amp; CG for Complex Wings — Piecewise Trapezoidal Method</h1>
+<div class="subtitle">For wings with curved leading or trailing edges (e.g. Sea Fury, Spitfire). Split the semi-span into 2–10 sections; each section is treated as its own trapezoid, then combined via area-weighted averages.</div>
+
+<!-- ============================================================
+     TOP SECTION: Diagram + Step Legend
+============================================================ -->
+<div class="top-section">
+
+  <div class="panel">
+    <svg viewBox="0 0 800 560" xmlns="http://www.w3.org/2000/svg">
+      <!-- ============================================================
+           Example wing: 3 sections, unswept LE, curved TE.
+           Fuselage at x = 660, semi-span = 600 px
+           Stations at x = 660 (c0), 460 (c1), 260 (c2), 60 (c3=Ct)
+           LE at y = 100 (flat, no sweep in example)
+           Chord values: c0=220, c1=200, c2=160, c3=80
+           TE positions:
+             at x=660: y = 320
+             at x=460: y = 300
+             at x=260: y = 260
+             at x=60:  y = 180
+           Section widths: Δy_1=Δy_2=Δy_3=200
+        ============================================================ -->
+
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#888"/>
+        </marker>
+        <marker id="arrRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#c0392b"/>
+        </marker>
+      </defs>
+
+      <!-- Orientation arrows -->
+      <g font-family="sans-serif" font-size="11" fill="#888">
+        <line x1="35" y1="55" x2="35" y2="18" stroke="#888" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="42" y="28">Forward (nose)</text>
+        <line x1="35" y1="55" x2="35" y2="95" stroke="#888" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="42" y="90">Aft (tail)</text>
+        <line x1="35" y1="55" x2="92" y2="55" stroke="#888" stroke-width="1.5" marker-end="url(#arr)"/>
+        <text x="50" y="49">Inboard →</text>
+      </g>
+
+      <!-- Fuselage -->
+      <rect x="630" y="50" width="60" height="490" fill="#d8d8d8" stroke="#aaa"/>
+      <text x="660" y="44" font-family="sans-serif" font-size="11" fill="#666" text-anchor="middle">Fuselage</text>
+      <line x1="660" y1="15" x2="660" y2="555" stroke="#888" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="660" y="548" font-family="sans-serif" font-size="9" fill="#666" text-anchor="middle">centerline</text>
+
+      <!-- "True" curved wing outline (faint, dashed, behind everything) -->
+      <!-- LE is straight at y=100 in this example -->
+      <!-- TE is a curve passing through the TE points but bowing slightly -->
+      <path d="M 660 320 
+               C 560 318, 510 300, 460 300
+               C 410 300, 320 285, 260 260
+               C 200 230, 130 215, 60 180"
+            fill="none" stroke="#999" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <text x="395" y="350" font-family="sans-serif" font-size="10" fill="#888" font-style="italic">"true" curved TE (dashed)</text>
+
+      <!-- Trapezoidal sections (3 strips, drawn as separate polygons) -->
+      <!-- Strip 1: between c0 (centerline) and c1 -->
+      <polygon points="660,100 660,320 460,300 460,100" 
+               fill="#eaf2fa" stroke="#1f3a5f" stroke-width="1.5"/>
+      <!-- Strip 2: between c1 and c2 -->
+      <polygon points="460,100 460,300 260,260 260,100" 
+               fill="#f4f4fc" stroke="#1f3a5f" stroke-width="1.5"/>
+      <!-- Strip 3: between c2 and c3 (tip) -->
+      <polygon points="260,100 260,260 60,180 60,100" 
+               fill="#eaf2fa" stroke="#1f3a5f" stroke-width="1.5"/>
+
+      <!-- Leading edge -->
+      <line x1="660" y1="100" x2="60" y2="100" stroke="#1f3a5f" stroke-width="3"/>
+      <text x="365" y="92" font-family="sans-serif" font-size="11" fill="#1f3a5f" font-style="italic" text-anchor="middle">leading edge (straight in this example)</text>
+
+      <!-- Trailing edge approximation (piecewise straight) -->
+      <polyline points="660,320 460,300 260,260 60,180" 
+                fill="none" stroke="#1f3a5f" stroke-width="2.5"/>
+      <text x="155" y="172" font-family="sans-serif" font-size="10" fill="#1f3a5f" font-style="italic">piecewise TE (solid)</text>
+
+      <!-- ============================================================
+           STEP 1 — Pick number of sections (annotation only)
+        ============================================================ -->
+      <g>
+        <text x="365" y="32" font-family="sans-serif" font-size="12" fill="#2a7ab0" font-weight="bold" text-anchor="middle">① Pick n = 3 sections</text>
+      </g>
+
+      <!-- ============================================================
+           STEP 2 — Measure b/2
+        ============================================================ -->
+      <line x1="60" y1="520" x2="660" y2="520" stroke="#2a7ab0" stroke-width="2"/>
+      <line x1="60" y1="515" x2="60" y2="525" stroke="#2a7ab0" stroke-width="2"/>
+      <line x1="660" y1="515" x2="660" y2="525" stroke="#2a7ab0" stroke-width="2"/>
+      <text x="360" y="513" font-family="sans-serif" font-size="12" fill="#2a7ab0" font-weight="bold" text-anchor="middle">② b/2 (semi-span, centerline to tip)</text>
+
+      <!-- ============================================================
+           STEP 3 — Measure chords c_0, c_1, c_2, c_3
+        ============================================================ -->
+      <!-- c_0 at centerline -->
+      <line x1="697" y1="100" x2="697" y2="320" stroke="#2a7ab0" stroke-width="2"/>
+      <line x1="692" y1="100" x2="702" y2="100" stroke="#2a7ab0" stroke-width="2"/>
+      <line x1="692" y1="320" x2="702" y2="320" stroke="#2a7ab0" stroke-width="2"/>
+      <text x="708" y="210" font-family="sans-serif" font-size="12" fill="#2a7ab0" font-weight="bold">③ c₀</text>
+      <text x="708" y="223" font-family="sans-serif" font-size="9" fill="#2a7ab0">root chord</text>
+
+      <!-- c_1 -->
+      <line x1="460" y1="78" x2="460" y2="300" stroke="#2a7ab0" stroke-width="2" stroke-dasharray="4,2"/>
+      <text x="460" y="74" font-family="sans-serif" font-size="11" fill="#2a7ab0" font-weight="bold" text-anchor="middle">c₁</text>
+
+      <!-- c_2 -->
+      <line x1="260" y1="78" x2="260" y2="260" stroke="#2a7ab0" stroke-width="2" stroke-dasharray="4,2"/>
+      <text x="260" y="74" font-family="sans-serif" font-size="11" fill="#2a7ab0" font-weight="bold" text-anchor="middle">c₂</text>
+
+      <!-- c_3 = Ct (tip) -->
+      <line x1="45" y1="100" x2="45" y2="180" stroke="#2a7ab0" stroke-width="2"/>
+      <line x1="40" y1="100" x2="50" y2="100" stroke="#2a7ab0" stroke-width="2"/>
+      <line x1="40" y1="180" x2="50" y2="180" stroke="#2a7ab0" stroke-width="2"/>
+      <text x="28" y="145" font-family="sans-serif" font-size="11" fill="#2a7ab0" font-weight="bold" text-anchor="end">c₃ = Ct</text>
+
+      <!-- ============================================================
+           STEP 4 — Section widths Δy_1, Δy_2, Δy_3
+        ============================================================ -->
+      <line x1="460" y1="480" x2="660" y2="480" stroke="#2a7ab0" stroke-width="1.5"/>
+      <line x1="460" y1="476" x2="460" y2="484" stroke="#2a7ab0" stroke-width="1.5"/>
+      <line x1="660" y1="476" x2="660" y2="484" stroke="#2a7ab0" stroke-width="1.5"/>
+      <text x="560" y="473" font-family="sans-serif" font-size="10" fill="#2a7ab0" font-weight="bold" text-anchor="middle">④ Δy₁</text>
+
+      <line x1="260" y1="480" x2="460" y2="480" stroke="#2a7ab0" stroke-width="1.5"/>
+      <line x1="260" y1="476" x2="260" y2="484" stroke="#2a7ab0" stroke-width="1.5"/>
+      <line x1="460" y1="476" x2="460" y2="484" stroke="#2a7ab0" stroke-width="1.5"/>
+      <text x="360" y="473" font-family="sans-serif" font-size="10" fill="#2a7ab0" font-weight="bold" text-anchor="middle">Δy₂</text>
+
+      <line x1="60" y1="480" x2="260" y2="480" stroke="#2a7ab0" stroke-width="1.5"/>
+      <line x1="60" y1="476" x2="60" y2="484" stroke="#2a7ab0" stroke-width="1.5"/>
+      <line x1="260" y1="476" x2="260" y2="484" stroke="#2a7ab0" stroke-width="1.5"/>
+      <text x="160" y="473" font-family="sans-serif" font-size="10" fill="#2a7ab0" font-weight="bold" text-anchor="middle">Δy₃</text>
+
+      <!-- Section labels in the middle of each strip -->
+      <text x="560" y="207" font-family="sans-serif" font-size="11" fill="#1f3a5f" font-weight="bold" text-anchor="middle">Section 1</text>
+      <text x="360" y="185" font-family="sans-serif" font-size="11" fill="#1f3a5f" font-weight="bold" text-anchor="middle">Section 2</text>
+      <text x="160" y="155" font-family="sans-serif" font-size="11" fill="#1f3a5f" font-weight="bold" text-anchor="middle">Section 3</text>
+
+      <!-- ============================================================
+           STEP 5 — Per-section MAC_i and Y_mac_i (small green dots, no full MAC lines)
+           For each section, mark its individual MAC station with a small green tick
+           
+           Section 1 (c0=220, c1=200, Δy=200):
+             Y_mac_1_local = 200*(220+400)/(3*420) = 200*620/1260 = 98.41
+             Y_mac_1 from centerline = 0 + 98.41 ... but wait, we measure from centerline.
+             y_0 = 0 (at centerline = x=660). So strip 1's inboard edge is at x=660.
+             Strip 1's outboard edge is at x=460 (Δy=200 inboard from centerline).
+             Y_mac_1 from centerline = 98.41 (in span coords)
+             In diagram coords: x = 660 - 98.41 = 561.59
+             Local MAC_1 chord at that station = ?
+               At x=561.59, t = (660-561.59)/200 = 0.492
+               chord = c0 + t*(c1-c0) = 220 + 0.492*(-20) = 220 - 9.84 = 210.16
+             TE at that point: y = 100 + 210.16 = 310.16
+           
+           Section 2 (c1=200, c2=160, Δy=200):
+             Y_mac_2_local = 200*(200+320)/(3*360) = 200*520/1080 = 96.30
+             Inboard edge at x=460 (which is 200 from centerline)
+             Y_mac_2 from centerline = 200 + 96.30 = 296.30
+             In diagram coords: x = 660 - 296.30 = 363.70
+             Local chord: at x=363.70, t = (460-363.70)/200 = 0.4815
+               chord = 200 + 0.4815*(-40) = 200 - 19.26 = 180.74
+             TE: y = 100 + 180.74 = 280.74
+           
+           Section 3 (c2=160, c3=80, Δy=200):
+             Y_mac_3_local = 200*(160+160)/(3*240) = 200*320/720 = 88.89
+             Inboard edge at x=260 (400 from centerline)
+             Y_mac_3 from centerline = 400 + 88.89 = 488.89
+             In diagram coords: x = 660 - 488.89 = 171.11
+             Local chord: at x=171.11, t = (260-171.11)/200 = 0.4444
+               chord = 160 + 0.4444*(-80) = 160 - 35.56 = 124.44
+             TE: y = 100 + 124.44 = 224.44
+           
+           Combined values:
+             Areas:
+               S_1 = (220+200)*200/2 = 42000
+               S_2 = (200+160)*200/2 = 36000
+               S_3 = (160+80)*200/2 = 24000
+               S_total = 102000
+             MAC values:
+               MAC_1 = (2/3)*(220²+220*200+200²)/(220+200) = (2/3)*(48400+44000+40000)/420 = (2/3)*132400/420 = 210.16
+               MAC_2 = (2/3)*(200²+200*160+160²)/(200+160) = (2/3)*(40000+32000+25600)/360 = (2/3)*97600/360 = 180.74
+               MAC_3 = (2/3)*(160²+160*80+80²)/(160+80) = (2/3)*(25600+12800+6400)/240 = (2/3)*44800/240 = 124.44
+             MAC_combined = (210.16*42000 + 180.74*36000 + 124.44*24000) / 102000
+                          = (8826720 + 6506640 + 2986560) / 102000
+                          = 18319920 / 102000 = 179.61
+             Y_mac_combined = (98.41*42000 + 296.30*36000 + 488.89*24000) / 102000
+                            = (4133220 + 10666800 + 11733360) / 102000
+                            = 26533380 / 102000 = 260.13
+        ============================================================ -->
+
+      <!-- Section 1 individual MAC tick -->
+      <line x1="561.59" y1="100" x2="561.59" y2="310.16" stroke="#7fbb7f" stroke-width="2" stroke-dasharray="2,2"/>
+      <circle cx="561.59" cy="100" r="2.5" fill="#7fbb7f"/>
+      <circle cx="561.59" cy="310.16" r="2.5" fill="#7fbb7f"/>
+      <text x="561.59" y="405" font-family="sans-serif" font-size="9" fill="#5fa05f" text-anchor="middle">MAC₁</text>
+
+      <!-- Section 2 individual MAC tick -->
+      <line x1="363.70" y1="100" x2="363.70" y2="280.74" stroke="#7fbb7f" stroke-width="2" stroke-dasharray="2,2"/>
+      <circle cx="363.70" cy="100" r="2.5" fill="#7fbb7f"/>
+      <circle cx="363.70" cy="280.74" r="2.5" fill="#7fbb7f"/>
+      <text x="363.70" y="405" font-family="sans-serif" font-size="9" fill="#5fa05f" text-anchor="middle">MAC₂</text>
+
+      <!-- Section 3 individual MAC tick -->
+      <line x1="171.11" y1="100" x2="171.11" y2="224.44" stroke="#7fbb7f" stroke-width="2" stroke-dasharray="2,2"/>
+      <circle cx="171.11" cy="100" r="2.5" fill="#7fbb7f"/>
+      <circle cx="171.11" cy="224.44" r="2.5" fill="#7fbb7f"/>
+      <text x="171.11" y="405" font-family="sans-serif" font-size="9" fill="#5fa05f" text-anchor="middle">MAC₃</text>
+
+      <text x="120" y="395" font-family="sans-serif" font-size="11" fill="#c97a1a" font-weight="bold">⑤ Per-section MACᵢ, S ᵢ, Y_macᵢ</text>
+
+      <!-- ============================================================
+           STEP 6 — Combined MAC and Y_mac (area-weighted)
+           Y_mac_combined = 260.13 → x = 660 - 260.13 = 399.87
+           Local chord at that station: t = (460-399.87)/200 = 0.30065
+             chord = 200 + (1-0.30065)*(220-200) ... wait, I'm getting confused with direction.
+           Actually, x=399.87 is between section 1 boundary (x=460) and section 2 boundary (x=260),
+           so it's in section 2. Local chord:
+             At x=399.87, t = (460 - 399.87)/200 = 0.30065 along section 2.
+             chord = c1 + t*(c2-c1) = 200 + 0.30065*(160-200) = 200 - 12.03 = 187.97
+           So at the combined Y_mac station, the local actual chord is 187.97.
+           BUT the COMBINED MAC value is 179.61, not 187.97.
+           
+           This is an interesting subtlety: unlike a simple trapezoidal wing where MAC equals
+           the local chord at the Y_mac station, for a piecewise/curved wing they are NOT equal.
+           
+           For the visual, I'll draw the combined MAC line at the Y_mac station, with length
+           equal to MAC_combined (179.61), positioned so its LE is at y=100 + X_mac_combined
+           (zero in this example since no sweep).
+           So MAC line from (399.87, 100) to (399.87, 279.61), length 179.61.
+           
+           Draw it offset for clarity, similar to V4 style.
+           Offset position: x = 350 (drawn slightly to the left of the actual MAC station)
+        ============================================================ -->
+
+      <!-- Y_mac_combined dimension at top -->
+      <line x1="399.87" y1="40" x2="660" y2="40" stroke="#c97a1a" stroke-width="2"/>
+      <line x1="399.87" y1="35" x2="399.87" y2="45" stroke="#c97a1a" stroke-width="2"/>
+      <line x1="660" y1="35" x2="660" y2="45" stroke="#c97a1a" stroke-width="2"/>
+      <text x="530" y="32" font-family="sans-serif" font-size="12" fill="#c97a1a" font-weight="bold" text-anchor="middle">⑥ Y_mac (combined, area-weighted)</text>
+
+      <!-- Combined MAC station vertical dashed line -->
+      <line x1="399.87" y1="48" x2="399.87" y2="450" stroke="#c97a1a" stroke-width="1.5" stroke-dasharray="5,4"/>
+
+      <!-- ============================================================
+           STEP 7 — Draw combined MAC line, offset for clarity
+        ============================================================ -->
+      <!-- Combined MAC line drawn offset to x=350 -->
+      <line x1="350" y1="100" x2="350" y2="279.61" stroke="#2a9d4a" stroke-width="5"/>
+      <circle cx="350" cy="100" r="5" fill="#2a9d4a"/>
+      <circle cx="350" cy="279.61" r="5" fill="#2a9d4a"/>
+      <!-- Tie lines to the actual MAC station -->
+      <line x1="399.87" y1="100" x2="350" y2="100" stroke="#2a9d4a" stroke-width="1.5" stroke-dasharray="2,2"/>
+      <line x1="399.87" y1="279.61" x2="350" y2="279.61" stroke="#2a9d4a" stroke-width="1.5" stroke-dasharray="2,2"/>
+      <circle cx="399.87" cy="100" r="3.5" fill="#2a9d4a" stroke="#fff" stroke-width="1"/>
+      <circle cx="399.87" cy="279.61" r="3.5" fill="#2a9d4a" stroke="#fff" stroke-width="1"/>
+
+      <text x="245" y="198" font-family="sans-serif" font-size="12" fill="#2a9d4a" font-weight="bold">⑦ Combined MAC</text>
+      <text x="245" y="211" font-family="sans-serif" font-size="9" fill="#2a9d4a">(length = MAC_total,</text>
+      <text x="245" y="222" font-family="sans-serif" font-size="9" fill="#2a9d4a">at the combined Y_mac</text>
+      <text x="245" y="233" font-family="sans-serif" font-size="9" fill="#2a9d4a">station, shown offset)</text>
+
+      <!-- ============================================================
+           STEP 8 — Mark 25% MAC on combined MAC line
+           25% of 179.61 = 44.90
+           Point: (350, 100 + 44.90) = (350, 144.90)
+        ============================================================ -->
+      <circle cx="350" cy="144.90" r="6" fill="#c0392b" stroke="#fff" stroke-width="2"/>
+      <text x="280" y="148" font-family="sans-serif" font-size="12" fill="#c0392b" font-weight="bold" text-anchor="end">⑧ 25% MAC</text>
+
+      <!-- 25% bracket marker -->
+      <line x1="360" y1="100" x2="365" y2="100" stroke="#c0392b" stroke-width="1"/>
+      <line x1="360" y1="144.90" x2="365" y2="144.90" stroke="#c0392b" stroke-width="1"/>
+      <line x1="362.5" y1="100" x2="362.5" y2="144.90" stroke="#c0392b" stroke-width="1"/>
+      <text x="368" y="128" font-family="sans-serif" font-size="9" fill="#c0392b">25%</text>
+
+      <!-- ============================================================
+           STEP 9 — Project to centerline → CG balance point
+        ============================================================ -->
+      <line x1="350" y1="144.90" x2="655" y2="144.90" stroke="#c0392b" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arrRed)"/>
+      <text x="500" y="139" font-family="sans-serif" font-size="10" fill="#c0392b" font-style="italic" text-anchor="middle">⑨ project to centerline</text>
+
+      <!-- CG balance point on centerline -->
+      <circle cx="660" cy="144.90" r="8" fill="#c0392b" stroke="#fff" stroke-width="2"/>
+      <circle cx="660" cy="144.90" r="3" fill="#fff"/>
+
+      <!-- Final CG dimension on the right -->
+      <line x1="745" y1="100" x2="745" y2="144.90" stroke="#c0392b" stroke-width="2"/>
+      <line x1="740" y1="100" x2="750" y2="100" stroke="#c0392b" stroke-width="2"/>
+      <line x1="740" y1="144.90" x2="750" y2="144.90" stroke="#c0392b" stroke-width="2"/>
+      <text x="753" y="120" font-family="sans-serif" font-size="11" fill="#c0392b" font-weight="bold">⚖ CG</text>
+      <text x="753" y="133" font-family="sans-serif" font-size="9" fill="#c0392b">aft of root LE</text>
+      <text x="753" y="144" font-family="sans-serif" font-size="9" fill="#c0392b">= X_mac +</text>
+      <text x="753" y="155" font-family="sans-serif" font-size="9" fill="#c0392b">(%MAC × MAC)</text>
+
+      <!-- Mark root LE -->
+      <circle cx="660" cy="100" r="4" fill="#1f3a5f"/>
+      <text x="650" y="93" font-family="sans-serif" font-size="9" fill="#1f3a5f" text-anchor="end">root LE</text>
+
+    </svg>
+  </div>
+
+  <!-- Step legend -->
+  <div class="panel legend">
+    <h2>Steps</h2>
+
+    <div class="step measure"><span class="num">1</span><b>Pick n</b> — the number of sections (2 to 10). More sections = better approximation of curved edges. 3 is usually enough for a Sea Fury-style wing; 5 for a Spitfire ellipse.</div>
+
+    <div class="step measure"><span class="num">2</span><b>Measure b/2</b> — semi-span, from fuselage centerline to wingtip (or to the equivalent linearized tip if you've eyeballed the rounded tip into a straight one).</div>
+
+    <div class="step measure"><span class="num">3</span><b>Measure chord at each station</b> — c₀ at centerline (extrapolated through fuselage), c₁, c₂, …, cₙ at each section boundary. cₙ is the tip chord (Ct). All chords measured parallel to the fuselage centerline.</div>
+
+    <div class="step measure"><span class="num">4</span><b>Measure each section's width</b> — Δy₁, Δy₂, …, Δyₙ. The widths must sum to b/2.</div>
+
+    <div class="step measure"><span class="num">★</span><b>(Optional) Measure sweep angle Λ</b> — single value applied to whole wing. Use 0° for unswept wings with curved tips like the Sea Fury.</div>
+
+    <div class="step compute"><span class="num">5</span><b>Compute per-section values</b> — for each strip i:
+      <div class="formula">Sᵢ = (cᵢ₋₁ + cᵢ) · Δyᵢ / 2</div>
+      <div class="formula">MACᵢ = (2/3)·(cᵢ₋₁² + cᵢ₋₁·cᵢ + cᵢ²) / (cᵢ₋₁ + cᵢ)</div>
+      <div class="formula">Y_macᵢ = yᵢ₋₁ + Δyᵢ · (cᵢ₋₁ + 2cᵢ) / [3·(cᵢ₋₁ + cᵢ)]</div>
+      where yᵢ₋₁ is the cumulative distance from centerline to the inboard edge of strip i.
+    </div>
+
+    <div class="step compute"><span class="num">6</span><b>Combine via area-weighted averages</b>:
+      <div class="formula">MAC = Σ(MACᵢ · Sᵢ) / Σ Sᵢ</div>
+      <div class="formula">Y_mac = Σ(Y_macᵢ · Sᵢ) / Σ Sᵢ</div>
+      <div class="formula">X_mac = Y_mac · tan(Λ)</div>
+    </div>
+
+    <div class="step locate"><span class="num">7</span><b>Draw combined MAC line</b> at the combined Y_mac station, parallel to centerline. Length = combined MAC. (In the diagram, drawn offset for clarity.)</div>
+
+    <div class="step cg"><span class="num">8</span><b>Mark %MAC point</b> on the combined MAC line, aft from its LE.</div>
+
+    <div class="step cg"><span class="num">9</span><b>Project to centerline</b>. CG distance aft of root LE (along centerline) = <span class="term">X_mac + (%MAC × MAC)</span></div>
+
+    <div class="key">
+      <div><span class="swatch" style="background:#2a7ab0"></span><b>Blue</b> — measured on the wing</div>
+      <div><span class="swatch" style="background:#c97a1a"></span><b>Orange</b> — computed values</div>
+      <div><span class="swatch" style="background:#7fbb7f"></span><b>Light green</b> — per-section MACᵢ stations</div>
+      <div><span class="swatch" style="background:#2a9d4a"></span><b>Green</b> — combined MAC</div>
+      <div><span class="swatch" style="background:#c0392b"></span><b>Red</b> — CG location</div>
+    </div>
+  </div>
+
+</div>
+
+<hr class="section-divider">
+
+<!-- ============================================================
+     CALCULATOR SECTION
+============================================================ -->
+<h2 style="max-width:1280px; margin: 0 auto 12px;">Live Calculator</h2>
+<div class="subtitle" style="max-width:1280px; margin: 0 auto 16px;">Defaults show a 3-section Sea Fury-like wing with curved trailing edge. Use consistent units throughout (mm, cm, or inches).</div>
+
+<div class="calc-section">
+
+  <div class="panel">
+    <div class="input-group">
+      <label>Number of sections (n)</label>
+      <div class="desc">2–10. Each section is one trapezoidal strip.</div>
+      <select id="n">
+        <option value="2">2</option>
+        <option value="3" selected>3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="7">7</option>
+        <option value="8">8</option>
+        <option value="9">9</option>
+        <option value="10">10</option>
+      </select>
+    </div>
+
+    <div class="input-group">
+      <label>Semi-span (b/2)</label>
+      <div class="desc">From fuselage centerline to wingtip</div>
+      <input type="number" id="bHalf" value="700" step="1">
+    </div>
+
+    <div class="input-group">
+      <label>LE sweep angle (Λ)</label>
+      <div class="desc">Degrees. Single value applied to whole wing. 0° = unswept.</div>
+      <input type="number" id="sweep" value="0" step="0.5">
+    </div>
+
+    <h3 style="font-size:0.95em; margin: 14px 0 6px; color:#1f3a5f; border-bottom:1px solid #eee; padding-bottom: 4px;">Chord stations</h3>
+    <div id="chordInputs"></div>
+
+    <h3 style="font-size:0.95em; margin: 14px 0 6px; color:#1f3a5f; border-bottom:1px solid #eee; padding-bottom: 4px;">Section widths</h3>
+    <div id="widthInputs"></div>
+
+    <div id="validation" class="validation ok">Section widths sum correctly to b/2.</div>
+
+    <div class="note-box">
+      <b>Tip:</b> Measure all chords parallel to the fuselage centerline (nose-to-tail). For wings where the LE has a slight curve, draw a single straight-line approximation through it (the "eyeball linearization" method) and use one sweep angle. For per-section sweep variation, you'd need leading-edge x-positions at each station instead of just chord lengths.
+    </div>
+  </div>
+
+  <div class="panel">
+
+    <div class="results-section">
+      <h3>Per-section breakdown</h3>
+      <table class="section-breakdown" id="sectionTable">
+        <thead>
+          <tr>
+            <th>Section</th>
+            <th>cᵢ₋₁</th>
+            <th>cᵢ</th>
+            <th>Δyᵢ</th>
+            <th>Sᵢ</th>
+            <th>MACᵢ</th>
+            <th>Y_macᵢ</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+
+    <div class="results-section">
+      <h3>Combined wing geometry</h3>
+      <div class="result-row"><span class="label">Total wing area (×2 for full wing)</span><span class="value" id="totalArea">—</span></div>
+      <div class="result-row"><span class="label">Combined MAC</span><span class="value" id="macCombined">—</span></div>
+      <div class="result-row"><span class="label">Combined Y_mac (from centerline)</span><span class="value" id="ymacCombined">—</span></div>
+      <div class="result-row"><span class="label">Combined X_mac (MAC LE aft of root LE)</span><span class="value" id="xmacCombined">—</span></div>
+    </div>
+
+    <div class="results-section">
+      <h3>CG locations at various %MAC settings</h3>
+      <p style="font-size:0.85em; color:#666; margin: 4px 0 10px;">
+        <b>From MAC LE</b> = distance aft along the combined MAC line itself.<br>
+        <b>From root LE</b> = distance aft of the root LE, measured along the fuselage centerline. <i>This is what you'd mark on your fuselage to find the CG balance point.</i>
+      </p>
+      <table class="cg-table">
+        <thead>
+          <tr>
+            <th>%MAC</th>
+            <th>From MAC LE</th>
+            <th>From root LE (on fuselage)</th>
+          </tr>
+        </thead>
+        <tbody id="cgTable"></tbody>
+      </table>
+      <div class="legend-bar">
+        <div class="item"><div class="swatch-box" style="background:#eaf4ea"></div>Conservative / nose-heavy (22–26%)</div>
+        <div class="item"><div class="swatch-box" style="background:#fff8e0"></div>Sport / neutral (28–32%)</div>
+        <div class="item"><div class="swatch-box" style="background:#fde8e3"></div>Aggressive / 3D-aerobatic (34–40%)</div>
+      </div>
+    </div>
+
+    <div class="note-box">
+      <b>Reminder:</b> The "From root LE" column already accounts for sweep. To find the balance point on your model, measure that distance aft from where the root LE meets the fuselage, marked along the fuselage centerline. Always start at a more forward CG for the maiden flight and progressively move aft. Use dive/stall/inverted-trim flight tests to confirm.
+    </div>
+  </div>
+
+</div>
+
+<hr class="section-divider">
+
+<!-- ============================================================
+     GLOSSARY
+============================================================ -->
+<div class="glossary-section">
+  <div class="glossary">
+    <h2>Variable glossary</h2>
+
+    <h3>Inputs (what you measure)</h3>
+    <dl>
+      <dt>n</dt><dd>Number of sections you split the semi-span into (2–10). More sections give a better approximation but require more measurements.</dd>
+      <dt>b/2</dt><dd>Semi-span — distance from fuselage centerline to wingtip (or equivalent linearized tip).</dd>
+      <dt>cᵢ</dt><dd>Chord length at station i. Station 0 is at the centerline (c₀ = root chord, Cr). Station n is at the tip (cₙ = tip chord, Ct). Total chord stations = n + 1.</dd>
+      <dt>Δyᵢ</dt><dd>Width of section i (distance from station i–1 to station i). The Greek letter Δ (delta) means "interval" or "change in". Total sections = n. Widths must sum to b/2.</dd>
+      <dt>Λ</dt><dd>Leading-edge sweep angle (capital Greek lambda). Positive for backward sweep, negative for forward sweep, zero for unswept. Single value applied to the whole wing.</dd>
+    </dl>
+
+    <h3>Per-section computed values (one per strip)</h3>
+    <dl>
+      <dt>λᵢ</dt><dd>Local taper ratio of section i (lowercase Greek lambda). λᵢ = cᵢ / cᵢ₋₁.</dd>
+      <dt>Sᵢ</dt><dd>Planform area of section i. Sᵢ = (cᵢ₋₁ + cᵢ) · Δyᵢ / 2.</dd>
+      <dt>MACᵢ</dt><dd>Mean Aerodynamic Chord of section i, treating it as a standalone trapezoid.</dd>
+      <dt>Y_macᵢ</dt><dd>Spanwise location of section i's MAC, measured from the fuselage centerline (not from the strip's inboard edge).</dd>
+      <dt>yᵢ</dt><dd>Cumulative spanwise position of station i, measured from centerline. y₀ = 0, yₙ = b/2.</dd>
+    </dl>
+
+    <h3>Combined output values</h3>
+    <dl>
+      <dt>MAC</dt><dd>Combined Mean Aerodynamic Chord — area-weighted average of MACᵢ across all sections. This is the equivalent chord length the whole wing "behaves like" aerodynamically.</dd>
+      <dt>Y_mac</dt><dd>Combined spanwise MAC location — area-weighted average of Y_macᵢ. This is where the combined MAC line gets drawn on the wing.</dd>
+      <dt>X_mac</dt><dd>How far aft of the root LE the combined MAC's leading edge sits, due to sweep. X_mac = Y_mac · tan(Λ). Zero for unswept wings.</dd>
+    </dl>
+
+    <h3>Math symbols</h3>
+    <dl>
+      <dt>Σ</dt><dd>Capital Greek sigma — "sum across all i". <i>Σ Sᵢ</i> means "sum of S₁ + S₂ + … + Sₙ".</dd>
+      <dt>·</dt><dd>Multiplication (interchangeable with ×).</dd>
+      <dt>²</dt><dd>Squared (multiplied by itself once).</dd>
+      <dt>tan(Λ)</dt><dd>Tangent of the sweep angle. For small angles, tan(Λ) ≈ Λ in radians. Used to convert spanwise position into aft displacement.</dd>
+    </dl>
+
+    <h3>Why area-weighted averages?</h3>
+    <p style="font-size: 0.9em; color: #444; line-height: 1.5;">
+      The general (calculus) definition of MAC is MAC · S = ∫ c(y)² dy, where the integral is taken across the full span. When the wing is split into trapezoidal strips, that integral becomes a sum: ∫ c(y)² dy = Σ (MACᵢ · Sᵢ). Dividing both sides by the total area gives MAC = Σ(MACᵢ · Sᵢ) / Σ Sᵢ — an area-weighted average. The same logic applies to Y_mac, which weights spanwise position by chord. Bigger sections (more area) contribute more to the average, which is physically correct because they generate more lift.
+    </p>
+
+    <h3>How accurate is this method?</h3>
+    <p style="font-size: 0.9em; color: #444; line-height: 1.5;">
+      For a Sea Fury-style wing (mild taper, mostly straight LE, curved TE near tip), splitting into 3–5 sections gets you within 1% of the true MAC. The flight-test CG sweep range you'd explore anyway is much larger than that error, so this method is well within practical tolerance. For wings with highly curved planforms (Spitfire ellipse), use 6–10 sections concentrated where the curvature is sharpest.
+    </p>
+  </div>
+</div>
+
+<script>
+(function() {
+  const els = {
+    n: document.getElementById('n'),
+    bHalf: document.getElementById('bHalf'),
+    sweep: document.getElementById('sweep'),
+    chordInputs: document.getElementById('chordInputs'),
+    widthInputs: document.getElementById('widthInputs'),
+    validation: document.getElementById('validation'),
+    sectionTable: document.getElementById('sectionTable').querySelector('tbody'),
+    totalArea: document.getElementById('totalArea'),
+    macCombined: document.getElementById('macCombined'),
+    ymacCombined: document.getElementById('ymacCombined'),
+    xmacCombined: document.getElementById('xmacCombined'),
+    cgTable: document.getElementById('cgTable'),
+  };
+
+  // Default values for n=3 sections (Sea Fury-like)
+  const defaultChords = [320, 300, 220, 80];  // c0, c1, c2, c3
+  const defaultWidths = [350, 210, 140];      // Δy1, Δy2, Δy3
+  const defaultBHalf = 700;
+
+  // Store current values so they persist when n changes
+  let currentChords = defaultChords.slice();
+  let currentWidths = defaultWidths.slice();
+
+  function fmt(n, digits) {
+    if (!isFinite(n)) return '—';
+    return n.toFixed(digits == null ? 2 : digits);
+  }
+
+  function buildInputs() {
+    const n = parseInt(els.n.value);
+
+    // Resize arrays if needed
+    while (currentChords.length < n + 1) currentChords.push(currentChords[currentChords.length - 1] * 0.7);
+    while (currentChords.length > n + 1) currentChords.pop();
+    while (currentWidths.length < n) {
+      const remaining = parseFloat(els.bHalf.value) - currentWidths.reduce((a,b)=>a+b,0);
+      currentWidths.push(Math.max(remaining / (n - currentWidths.length), 50));
+    }
+    while (currentWidths.length > n) currentWidths.pop();
+
+    // Build chord input fields
+    let chordHTML = '';
+    for (let i = 0; i <= n; i++) {
+      let label = '';
+      if (i === 0) label = `c₀ (root chord, Cr)`;
+      else if (i === n) label = `c${subscript(i)} (tip chord, Ct)`;
+      else label = `c${subscript(i)}`;
+      chordHTML += `<div class="input-group" style="margin-bottom: 6px;">
+        <label style="font-size: 0.85em;">${label}</label>
+        <input type="number" id="c${i}" value="${currentChords[i]}" step="1">
+      </div>`;
+    }
+    els.chordInputs.innerHTML = chordHTML;
+
+    // Build width input fields
+    let widthHTML = '';
+    for (let i = 0; i < n; i++) {
+      widthHTML += `<div class="input-group" style="margin-bottom: 6px;">
+        <label style="font-size: 0.85em;">Δy${subscript(i+1)} (section ${i+1} width)</label>
+        <input type="number" id="dy${i+1}" value="${currentWidths[i]}" step="1">
+      </div>`;
+    }
+    els.widthInputs.innerHTML = widthHTML;
+
+    // Attach listeners to all new inputs
+    for (let i = 0; i <= n; i++) {
+      document.getElementById(`c${i}`).addEventListener('input', recompute);
+    }
+    for (let i = 1; i <= n; i++) {
+      document.getElementById(`dy${i}`).addEventListener('input', recompute);
+    }
+
+    recompute();
+  }
+
+  function subscript(num) {
+    const subs = ['₀','₁','₂','₃','₄','₅','₆','₇','₈','₉'];
+    return num.toString().split('').map(d => subs[parseInt(d)]).join('');
+  }
+
+  function recompute() {
+    const n = parseInt(els.n.value);
+    const halfSpan = parseFloat(els.bHalf.value);
+    const sweepDeg = parseFloat(els.sweep.value) || 0;
+
+    // Read chord and width inputs
+    const chords = [];
+    for (let i = 0; i <= n; i++) {
+      const val = parseFloat(document.getElementById(`c${i}`).value);
+      chords.push(val);
+      currentChords[i] = val;
+    }
+    const widths = [];
+    for (let i = 1; i <= n; i++) {
+      const val = parseFloat(document.getElementById(`dy${i}`).value);
+      widths.push(val);
+      currentWidths[i-1] = val;
+    }
+
+    // Validate
+    const widthSum = widths.reduce((a,b) => a + b, 0);
+    const widthDiff = widthSum - halfSpan;
+    const widthError = Math.abs(widthDiff);
+    if (widthError < 0.5) {
+      els.validation.className = 'validation ok';
+      els.validation.innerHTML = `✓ Section widths sum to ${fmt(widthSum)} — matches b/2 = ${fmt(halfSpan)}.`;
+    } else {
+      const direction = widthDiff > 0 ? 'too high' : 'too low';
+      els.validation.className = 'validation warn';
+      els.validation.innerHTML = `⚠ Section widths sum to ${fmt(widthSum)} but b/2 = ${fmt(halfSpan)} (off by ${fmt(widthError)} — ${direction}). Calculations proceed but results may be inaccurate.`;
+    }
+
+    // Check for invalid inputs
+    let valid = halfSpan > 0;
+    for (const c of chords) if (!(c > 0)) valid = false;
+    for (const w of widths) if (!(w > 0)) valid = false;
+
+    if (!valid) {
+      els.sectionTable.innerHTML = `<tr><td colspan="7" style="text-align:center;color:#999;">Enter valid measurements</td></tr>`;
+      els.totalArea.textContent = '—';
+      els.macCombined.textContent = '—';
+      els.ymacCombined.textContent = '—';
+      els.xmacCombined.textContent = '—';
+      els.cgTable.innerHTML = `<tr><td colspan="3" style="text-align:center;color:#999;">—</td></tr>`;
+      return;
+    }
+
+    // Per-section calculations
+    const sections = [];
+    let cumY = 0;
+    for (let i = 0; i < n; i++) {
+      const cIn = chords[i];
+      const cOut = chords[i+1];
+      const dy = widths[i];
+
+      const area = (cIn + cOut) * dy / 2;
+      const lambda = cOut / cIn;
+      const mac = (2/3) * (cIn*cIn + cIn*cOut + cOut*cOut) / (cIn + cOut);
+      const yMacLocal = dy * (cIn + 2*cOut) / (3 * (cIn + cOut));
+      const yMac = cumY + yMacLocal;
+
+      sections.push({i: i+1, cIn, cOut, dy, area, lambda, mac, yMac});
+      cumY += dy;
+    }
+
+    // Combined values (area-weighted)
+    const totalArea = sections.reduce((sum, s) => sum + s.area, 0);
+    const macCombined = sections.reduce((sum, s) => sum + s.mac * s.area, 0) / totalArea;
+    const yMacCombined = sections.reduce((sum, s) => sum + s.yMac * s.area, 0) / totalArea;
+    const xMacCombined = yMacCombined * Math.tan(sweepDeg * Math.PI / 180);
+
+    // Render per-section table
+    let rows = '';
+    sections.forEach(s => {
+      rows += `<tr>
+        <td><b>${s.i}</b></td>
+        <td>${fmt(s.cIn)}</td>
+        <td>${fmt(s.cOut)}</td>
+        <td>${fmt(s.dy)}</td>
+        <td>${fmt(s.area)}</td>
+        <td>${fmt(s.mac)}</td>
+        <td>${fmt(s.yMac)}</td>
+      </tr>`;
+    });
+    els.sectionTable.innerHTML = rows;
+
+    // Render combined values
+    els.totalArea.textContent = fmt(totalArea);
+    els.macCombined.textContent = fmt(macCombined);
+    els.ymacCombined.textContent = fmt(yMacCombined);
+    els.xmacCombined.textContent = fmt(xMacCombined);
+
+    // Render CG table
+    let cgRows = '';
+    for (let pct = 22; pct <= 40; pct += 2) {
+      const fromMacLE = (pct/100) * macCombined;
+      const fromRootLE = xMacCombined + fromMacLE;
+      let cls = '';
+      if (pct <= 26) cls = 'highlight-conservative';
+      else if (pct >= 28 && pct <= 32) cls = 'highlight-sport';
+      else if (pct >= 34) cls = 'highlight-aggressive';
+      cgRows += `<tr class="${cls}"><td><b>${pct}%</b></td><td>${fmt(fromMacLE)}</td><td>${fmt(fromRootLE)}</td></tr>`;
+    }
+    els.cgTable.innerHTML = cgRows;
+  }
+
+  els.n.addEventListener('change', buildInputs);
+  els.bHalf.addEventListener('input', recompute);
+  els.sweep.addEventListener('input', recompute);
+
+  buildInputs();
+})();
+</script>
+
+</body>
+</html>
