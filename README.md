@@ -1,9 +1,9 @@
 # Aircraft_CG_Calculators
 Calculators for determining optimal Center of Gravity positions on aircraft
 
-While I was reading about and building model aircraft, I noticed many Center of Gravity recommendations from the manufacturer are either missing, incorrect, or not ideal for the style of flying I would like to do with my models.
+While I was reading about and building model aircraft, I noticed many Center of Gravity recommendations from the manufacturer are either missing, incorrect, or not ideal for the style of flying I would like to do with my models.  The only way I was discovering better CG positioning was either through reading other pilots' experiences through forums (if the model was popular enough to get any discussion) or through experimentation by picking a CG, flying the plane, and seeing what happens, which was dangerous.
 
-So I made a set of calculators that use length and angle measurements taken from models in order to calculate this, with all the complex math handled automatically on the pages.
+I wanted to verify proper CGs through math, so I made a set of calculators that use length and angle measurements taken from models to calculate them, with all the complex calculations handled automatically within each page.
 
 There are three versions so far, based on the kind of aircraft design in question.
 
